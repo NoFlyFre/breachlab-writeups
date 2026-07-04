@@ -1,32 +1,51 @@
-# Mirage Track - Mirage 4
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   mirage track · phile 0x04 · "left in the open"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: mirage-04  "Left in the Open"
+   class ...: web · info disclosure · robots + sitemap
+   tools ...: curl · view-source
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- **Track:** Mirage
-- **Livello:** Mirage 4 ("Left in the Open")
-- **Fonte appunti:** `mirage_track/mirage04/notes.md`
+> la pagina interna non è linkata da nessuna parte. peccato che
+> `robots.txt` la elenchi per dire ai crawler di non indicizzarla, e la
+> sitemap ti dia pure l'URL preciso.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Il livello espone una landing page marketing dell'applicazione fittizia "Nimbus AI". L'obiettivo, come nei livelli precedenti della catena Mirage, è muoversi dalla superficie pubblica dell'applicazione fino a trovare un pannello interno che espone le credenziali per l'ambiente successivo.
+Landing marketing di "Nimbus AI". Come nei livelli precedenti, obiettivo:
+partire dalla superficie pubblica e arrivare a un pannello interno che
+espone le credenziali per l'ambiente successivo.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-La homepage è una landing page statica con due CTA: "Start for free" e "Read the docs". Seguendo il link alla documentazione si arriva a `/docs`, che però mostra solo un placeholder ("Documentation is on the way"), senza contenuto utile.
+Homepage statica con due CTA ("Start for free", "Read the docs"). Il link
+docs porta a `/docs`, ma è solo un placeholder ("Documentation is on the
+way"). Con la doc a vuoto, il passo successivo sono i file standard di
+discovery lato server: `robots.txt` e la sitemap XML che referenzia.
 
-Con la documentazione a vuoto, il passo successivo è consultare i file standard di discovery lato server: `robots.txt` e la sitemap XML referenziata al suo interno.
+## ----[ 0x02 · il difetto ]----
 
-## Tecnica
+**Information disclosure via robots.txt e sitemap.xml.** `robots.txt`, che
+dovrebbe dire ai crawler cosa *non* indicizzare, qui rivela un percorso
+amministrativo non linkato da nessuna parte. La sitemap, referenziata
+dallo stesso robots, ne elenca l'URL completo, rendendo banale
+raggiungerlo. Arrivati lì, la pagina di stato interno espone in chiaro
+(dietro il solito "Reveal" client-side) le credenziali HTTP Basic per
+l'ambiente successivo.
 
-La tecnica sfruttata è **information disclosure tramite robots.txt e sitemap.xml**. Il file `robots.txt`, pensato per dire ai crawler quali percorsi *non* indicizzare, qui rivela involontariamente l'esistenza di un percorso amministrativo che non era linkato da nessuna parte nell'interfaccia pubblica. La sitemap, referenziata dallo stesso robots.txt, conferma ed elenca esplicitamente l'URL completo della pagina interna, rendendo triviale raggiungerla anche se non era mai stata esposta via link cliccabile. Una volta raggiunta, la pagina di stato interno espone in chiaro (dietro un pulsante "Reveal" lato client, quindi senza vera protezione server-side) le credenziali HTTP Basic per l'ambiente di produzione successivo nella catena di deployment.
+## ----[ 0x03 · exploit ]----
 
-## Sfruttamento
+1. Homepage e link pubblici (`/`, `/docs`) — solo il placeholder doc.
 
-1. Analisi della homepage e dei link pubblici (`/`, `/docs`) — nessun contenuto utile oltre al placeholder di documentazione.
-
-2. Richiesta di `robots.txt`, che rivela un percorso escluso esplicitamente dall'indicizzazione e la presenza di una sitemap:
+2. `robots.txt` rivela un percorso escluso e una sitemap:
 
 ```text
 User-agent: *
@@ -40,7 +59,7 @@ Disallow: /internal/
 Sitemap: /sitemap.xml
 ```
 
-3. Consultazione di `sitemap.xml`, che elenca esplicitamente l'URL completo della pagina interna nascosta, non collegata da nessun link visibile nell'interfaccia pubblica:
+3. `sitemap.xml` elenca l'URL completo della pagina interna, mai linkata:
 
 ```xml
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -51,7 +70,10 @@ Sitemap: /sitemap.xml
 </urlset>
 ```
 
-4. Richiesta diretta del percorso interno indicato dalla sitemap: la pagina non richiede autenticazione e mostra una dashboard operativa interna con metadati di build, stato dei worker e, soprattutto, un pannello "Environments" con le credenziali HTTP Basic per l'ambiente successivo nella catena, protette solo da un pulsante "Reveal" lato client — il valore è già presente nell'HTML in un attributo `data-secret`, semplicemente nascosto via CSS/JS finché non si preme il pulsante (nessuna vera protezione, il segreto è nel markup fin dal caricamento della pagina):
+4. Richiesta diretta al percorso interno: nessuna auth, dashboard
+   operativa con build metadata, stato worker e un pannello
+   "Environments" con la chiave HTTP Basic per l'ambiente dopo, dietro
+   "Reveal" ma già nel markup come `data-secret`:
 
 ```html
 <div class="env-row">
@@ -63,16 +85,15 @@ Sitemap: /sitemap.xml
 </div>
 ```
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-Attraverso `robots.txt` → `sitemap.xml` → endpoint interno non autenticato è stata individuata una dashboard amministrativa che espone la chiave HTTP Basic dell'ambiente successivo nella catena Mirage: `<REDACTED>`.
+`robots.txt` → `sitemap.xml` → endpoint interno non autenticato → chiave
+HTTP Basic per l'ambiente successivo (valore fuori dal writeup). Lezione:
+`robots.txt` non nasconde niente, lo annuncia — e "Reveal" è markup, non
+sicurezza.
 
-## Nota di pubblicazione
+```
+--[ eof ]---------------------------------------------------------------
 
-Questa è la versione destinata alla pubblicazione su GitHub, in linea con la dottrina BreachLab (Writeups · Creators): il metodo — discovery via `robots.txt`/`sitemap.xml`, individuazione di un endpoint amministrativo non collegato pubblicamente, ed esfiltrazione di un secret esposto lato client dietro un semplice toggle "Reveal" — è spiegato per intero; il valore letterale della chiave d'accesso è stato rimosso per non fornire uno spoiler diretto ad altri operatori.
-
----
-
-## Crediti
-
-Livello e ambiente forniti da [BreachLab](https://breachlab.org) — Mirage Track.
+  breachlab.org · mirage track
+```

@@ -1,36 +1,57 @@
-# Ghost Track - Ghost 0
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   ghost track · phile 0x00 · "first contact"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: ghost-00  "First Contact"
+   class ...: recon / filesystem enum · OPSEC leak
+   tools ...: ls · cat
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Ghost Track
-- Livello: Ghost 0 ("First Contact")
-- Fonte appunti: `ghost_track/ghost00/notes.md`
+> primo contatto. nessun exploit, nessun trucco: solo una home da
+> guardare bene. qualcuno prima di te ha lasciato appunti, e — nonostante
+> si sia raccomandato di non farlo — anche le password accanto.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Livello di ingresso del Ghost Track. L'obiettivo è la ricognizione base della home directory assegnata all'operatore, alla ricerca di file lasciati sul sistema che possano contenere informazioni utili a proseguire (credenziali, note operative, riferimenti ad altri file).
+Livello d'ingresso del Ghost Track. L'unica missione è la ricognizione
+della home assegnata: cercare file lasciati sul sistema che portino
+avanti la catena — credenziali, note operative, riferimenti ad altri
+file. La regola d'oro dell'attaccante: prima di lanciare qualunque tool,
+guardati intorno.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-Nella home dell'utente è presente un file `notes.txt` che simula appunti operativi lasciati da un altro operatore (KAEL). Il file descrive un target di rete fittizio e un metodo di lavoro (recon passiva, nessuno scan attivo), e soprattutto contiene un promemoria: le credenziali sono archiviate separatamente in una cartella `archive/`, con la nota esplicita "non salvare password in chiaro nelle note".
+Nella home c'è `notes.txt`, appunti operativi lasciati da un altro
+operatore (KAEL). Descrivono un target di rete fittizio e un metodo di
+lavoro (recon passiva, niente scan attivi), e soprattutto un promemoria:
+le credenziali stanno separate in una cartella `archive/`, con tanto di
+nota "non salvare password in chiaro nelle note".
 
-Nonostante l'avvertimento presente nel testo, ispezionando la directory è stato trovato anche un secondo file, `credentials`, nella stessa posizione.
+Peccato che, ispezionando la stessa directory, accanto alle note ci sia
+anche un file `credentials`.
 
-## Tecnica
+## ----[ 0x02 · il difetto ]----
 
-Non è richiesta alcuna tecnica di exploitation: il livello insegna l'abitudine fondamentale del pentesting, ovvero l'enumerazione sistematica del filesystem accessibile prima di qualunque altra azione. La "vulnerabilità" qui è puramente operativa (OPSEC failure) — un file di credenziali lasciato accanto alle note nonostante l'avvertimento contrario presente nelle note stesse. È un promemoria che i secret non vanno mai salvati in chiaro insieme alla documentazione, e che come attaccante la prima cosa da fare è sempre guardarsi intorno con `ls`/`cat` prima di lanciare tool più complessi.
+Non c'è vulnerabilità software: il difetto è puramente operativo, un
+OPSEC failure. Un file di credenziali lasciato accanto alle note, in
+barba all'avvertimento scritto nelle note stesse. La lezione è doppia: i
+segreti non vanno mai in chiaro insieme alla documentazione, e da
+attaccante la prima mossa è sempre `ls` / `cat` su tutto il raggiungibile.
 
-## Sfruttamento
+## ----[ 0x03 · exploit ]----
 
-1. Lettura del file di note nella home directory:
+Lettura delle note nella home:
 
 ```bash
 cat notes.txt
 ```
-
-Output:
 
 ```text
 OPERATIONAL NOTES — KAEL
@@ -43,30 +64,26 @@ Credentials filed separately in archive/.
 Do not store passwords in plaintext notes.
 ```
 
-Il file conferma che esiste un secondo file con le credenziali, in violazione della propria stessa policy interna.
-
-2. Lettura del file di credenziali trovato accanto alle note:
+Le note stesse confermano l'esistenza di un secondo file con le
+credenziali — in violazione della loro stessa policy. Lo si legge:
 
 ```bash
 cat credentials
 ```
 
-Output:
-
 ```text
 <REDACTED>
 ```
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-La lettura del secondo file nella home directory restituisce la password per il livello successivo (ghost1). Il valore letterale non è riportato qui secondo la dottrina BreachLab; il punto didattico è che l'enumerazione sistematica della home directory (`ls`/`cat` su ogni file, anche quello che sembra "solo" un promemoria) è sufficiente a completare il livello.
+Il secondo file contiene la password per ghost-01. Valore letterale
+fuori dal writeup: il punto è che un `ls` / `cat` su ogni file della home
+— anche su quello che sembra "solo" un promemoria — basta a chiudere il
+livello.
 
-## Nota di pubblicazione
+```
+--[ eof ]---------------------------------------------------------------
 
-Questa è la versione pensata per la pubblicazione su GitHub secondo la dottrina BreachLab (Writeups · Creators): il metodo è spiegato per intero, ma password e flag letterali sono state sostituite con `<REDACTED>` per non fornire scorciatoie a chi non ha ancora risolto il livello.
-
----
-
-## Crediti
-
-Livello risolto su BreachLab (https://breachlab.org), Ghost Track. Credito al progetto BreachLab per la piattaforma di training.
+  breachlab.org · ghost track
+```

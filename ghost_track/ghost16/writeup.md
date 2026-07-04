@@ -1,48 +1,72 @@
-# Ghost Track - Ghost 16
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   ghost track · phile 0x10 · "config drift"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: ghost-16  "Config Drift"
+   class ...: diff · config drift · backdoored line
+   tools ...: diff · comm
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- **Track:** Ghost Track
-- **Livello:** Ghost 16 → 17 ("Config Drift")
-- **Fonte appunti:** `ghost_track/ghost16/notes.md`
+> due snapshot giornalieri dello stesso file di credenziali. tra lunedì e
+> martedì una riga è cambiata: qualcuno ha piantato una backdoor. non a
+> occhio — con `diff`.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Sull'host sono presenti due snapshot giornalieri di un file di credenziali autorizzate (`audit-mon.txt` e `audit-tue.txt`, presumibilmente dump di lunedì e martedì). Tra un giorno e l'altro una riga è cambiata: un backdoor è stato piantato modificando silenziosamente una credenziale di servizio. Il livello impone esplicitamente di non confrontare "a occhio" i due file, ma di usare uno strumento di confronto automatico.
+Sull'host ci sono due snapshot giornalieri di un file di credenziali
+autorizzate (`audit-mon.txt` e `audit-tue.txt`). Tra un giorno e l'altro
+una riga è cambiata: una credenziale di servizio modificata di nascosto.
+Il livello impone di non confrontare a occhio, ma con uno strumento di
+diff automatico.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-I due file rappresentano lo stato del sistema di autenticazione in due momenti diversi. L'ipotesi è che un attaccante abbia alterato una singola riga tra i due snapshot per inserire una credenziale di servizio nota, senza toccare il resto — una tecnica classica di persistenza silenziosa: se nessuno confronta i backup, la modifica passa inosservata.
+I due file sono lo stato del sistema di auth in due momenti. L'ipotesi:
+un attaccante ha alterato una singola riga per inserire una credenziale
+nota, senza toccare il resto — persistenza silenziosa classica: se
+nessuno confronta i backup, la modifica passa liscia.
 
-## Tecnica
+## ----[ 0x02 · il difetto ]----
 
-Si tratta di un caso di **individuazione di configuration drift** tramite diff testuale. Anziché ispezionare manualmente centinaia di righe cercando l'anomalia, si usa `diff` per confrontare byte per byte i due snapshot e ottenere direttamente il numero di riga e il contenuto esatto della modifica. `diff file1 file2` produce un output nel formato ed (es. `42c42` = riga 42 cambiata), con `<` che indica la riga nel primo file e `>` la riga corrispondente nel secondo. In alternativa, per file ordinati, `comm` permette di isolare righe uniche a ciascun file.
+Individuazione di **configuration drift** via diff testuale. Invece di
+frugare centinaia di righe a mano, `diff` confronta byte per byte e
+restituisce riga e contenuto della modifica. `diff file1 file2` produce
+output in formato ed (`42c42` = riga 42 cambiata), con `<` per il primo
+file e `>` per il secondo. Per file ordinati, `comm` isola le righe
+uniche a ciascuno.
 
-## Sfruttamento
+## ----[ 0x03 · exploit ]----
 
-1. Confronto diretto dei due snapshot di credenziali con `diff`:
+1. Confronto diretto dei due snapshot:
 
 ```bash
-diff audit-mon.txt audit-tue.txt 
+diff audit-mon.txt audit-tue.txt
 42c42
 < svc_0042:ede8866d29e6eec0fb98
 > svc_0042:<REDACTED>
 ```
 
-2. L'output isola immediatamente l'unica riga divergente: alla riga 42, l'account di servizio `svc_0042` aveva originariamente un valore che assomiglia a un hash/token, sostituito nello snapshot successivo con una stringa in chiaro — il classico segnale di una credenziale piantata "in fretta" da chi non si è preoccupato di mascherarla come le altre.
+2. L'output isola subito l'unica riga divergente: alla 42, l'account
+   `svc_0042` aveva un valore simile a un hash/token, sostituito nello
+   snapshot successivo con una stringa in chiaro — il segnale classico di
+   una credenziale piantata in fretta, senza curarsi di mascherarla come
+   le altre.
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-Il diff isola con precisione la riga alterata, rivelando la credenziale piantata per l'account di servizio `svc_0042`, che coincide con la password del livello successivo della catena. Il valore non è riportato qui per rispetto della dottrina "no spoilers" di BreachLab.
+Il diff isola la riga alterata: la credenziale piantata per `svc_0042` è
+la password del livello dopo (valore fuori dal writeup). Lezione: il
+drift tra due snapshot si trova in un comando, non con la pazienza.
 
-## Nota di pubblicazione
+```
+--[ eof ]---------------------------------------------------------------
 
-Questo writeup è la versione pubblicabile su GitHub secondo la dottrina BreachLab (`RULES · OPS DOCTRINE`): insegna il metodo (individuazione di configuration drift tramite diff testuale) senza rivelare la password/flag letterale del livello, in modo che chi legge debba comunque eseguire l'esercizio.
-
----
-
-## Crediti
-
-Livello e sfida a cura di **BreachLab** (https://breachlab.org) — Ghost Track.
+  breachlab.org · ghost track
+```

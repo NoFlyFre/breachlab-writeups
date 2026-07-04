@@ -1,50 +1,70 @@
-# Ghost Track - Ghost 11
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   ghost track · phile 0x0b · "unwrap the stage"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: ghost-11  "Unwrap the Stage"
+   class ...: file formats · magic numbers · nested archives
+   tools ...: file · tar · xz · gunzip
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- **Track:** Ghost Track
-- **Livello:** Ghost 11 → 12 ("Unwrap the Stage")
-- **Fonte appunti:** `ghost_track/ghost11/notes.md`
+> `stage.bin` è una cipolla: avvolta tre volte in formati diversi per
+> fregare i controlli DLP che guardano solo l'estensione. non fidarti del
+> nome — chiedi ai magic number.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Nella home di `ghost11` è presente un file `stage.bin` (leggibile solo dal proprietario). Il livello avverte che si tratta di un bundle "avvolto tre volte" in formati diversi, pensato per confondere controlli DLP superficiali che si basano solo sull'estensione del file. Obiettivo: identificare correttamente ogni formato (senza fidarsi del nome/estensione) e scartare i livelli di compressione uno alla volta, fino a recuperare la credenziale per il livello successivo.
+Nella home c'è `stage.bin` (leggibile solo dal proprietario), un bundle
+"avvolto tre volte" pensato per confondere i controlli superficiali
+basati sull'estensione. Obiettivo: identificare ogni formato reale e
+scartare i livelli uno alla volta fino alla credenziale.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-Un primo `ll` nella home mostra un solo file rilevante, `stage.bin`, da 10240 byte. Il nome suggerisce un blob binario generico, ma è proprio questo il punto: bisogna verificare il tipo reale del file invece di fidarsi dell'estensione. Il comando `file` viene usato sistematicamente prima di ogni tentativo di estrazione, ed è questo approccio — identifica, poi decomprimi — che guida tutta la sequenza.
+`ll` mostra un solo file utile, `stage.bin`, 10240 byte. Il nome dice
+"blob generico", ed è il punto: si verifica il tipo reale invece di
+fidarsi. `file` va usato sistematicamente prima di ogni estrazione —
+identifica, poi decomprimi.
 
-## Tecnica
+## ----[ 0x02 · il difetto ]----
 
-Si tratta di un caso di **compressione/archiviazione a più livelli con estensioni fuorvianti** (mismatch tra nome del file e magic number reale). La tecnica corretta non è indovinare il formato dal nome, ma interrogare i primi byte del file con `file` (che legge i magic number) e agire di conseguenza:
+Archiviazione a più livelli con estensioni fuorvianti (mismatch tra nome
+e magic number). Non si indovina dal nome, si interrogano i primi byte
+con `file`:
 
-- Un `tar` archive va estratto con `tar -xf` (non semplicemente `tar -x`, che senza `-f` si aspetta input da terminale).
-- Un file XZ va decompresso con `xz --decompress` (attenzione: il comando `xz` senza `--decompress` tenta di comprimere ulteriormente e, se il nome ha già suffisso `.xz`, si rifiuta).
-- Un file gzip va decompresso con `gunzip` (anche qui, `gzip` sul file già col suffisso `.gz` si rifiuta, serve l'operazione di decompressione esplicita).
+- un archive `tar` → `tar -xf` (senza `-f` tar aspetta input dal
+  terminale).
+- un file XZ → `xz --decompress` (senza `--decompress`, con suffisso
+  `.xz` già presente, si rifiuta).
+- un file gzip → `gunzip` (idem: `gzip` sul file già `.gz` si rifiuta).
 
-Il bundle nasconde tre livelli annidati: tar → xz → gzip, ciascuno rilevabile solo controllando il magic number reale, non l'estensione superficiale del file.
+Tre strati annidati: tar → xz → gzip, ognuno rilevabile solo dal magic
+number reale.
 
-## Sfruttamento
+## ----[ 0x03 · exploit ]----
 
-1. Enumerazione della home directory e identificazione del file target:
+1. Enumerazione e target:
 
 ```bash
 ll
-total 64
 ...
 -rw-r----- 1 ghost11 ghost11 10240 Jun 22 13:41 stage.bin
 ```
 
-2. Verifica del tipo reale del file con `file`, che rivela un archivio tar nonostante il nome generico `.bin`:
+2. Tipo reale del file — è un tar, nonostante il `.bin`:
 
 ```bash
-file stage.bin 
+file stage.bin
 stage.bin: POSIX tar archive (GNU)
 ```
 
-3. Tentativo di estrazione senza `-f` fallisce (tar si aspetta input da stdin/terminale); si corregge con `-f` per indicare il file esplicitamente:
+3. Estrazione senza `-f` fallisce, si corregge:
 
 ```bash
 tar -x stage.bin
@@ -52,43 +72,41 @@ tar: Refusing to read archive contents from terminal (missing -f option?)
 tar -xf stage.bin
 ```
 
-L'estrazione produce un secondo file, prossimo livello del bundle, con estensione combinata `.gz.xz`.
+Ne esce un file `.gz.xz`.
 
-4. Anche qui, non ci si fida del nome: si verifica il tipo reale, che conferma dati XZ compressi:
+4. Non ci si fida del nome, si verifica: dati XZ:
 
 ```bash
-file payload.txt.gz.xz 
+file payload.txt.gz.xz
 payload.txt.gz.xz: XZ compressed data, checksum CRC64
 xz --decompress payload.txt.gz.xz
 ```
 
-Questo produce il file successivo con estensione `.gz`.
+Produce il `.gz`.
 
-5. Ultimo livello, decompressione gzip con `gunzip` (il comando `gzip` diretto si rifiuta perché il file ha già suffisso `.gz`):
+5. Ultimo strato con `gunzip` (`gzip` diretto si rifiuta col suffisso già
+   presente):
 
 ```bash
 gunzip payload.txt.gz
 ```
 
-Il risultato finale è un file di testo di pochi byte.
-
-6. Lettura del contenuto in chiaro, che rivela la credenziale per il livello successivo:
+6. Lettura del testo finale:
 
 ```bash
-cat payload.txt 
+cat payload.txt
 <REDACTED>
 ```
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-La sequenza di identificazione (`file`) + decompressione mirata (`tar -xf` → `xz --decompress` → `gunzip`) porta al recupero della credenziale per l'utente successivo della catena, non riportata qui per rispetto della dottrina "no spoilers" di BreachLab.
+`file` per identificare + decompressione mirata (`tar -xf` →
+`xz --decompress` → `gunzip`) porta alla credenziale per l'utente dopo
+(valore fuori dal writeup). Lezione: l'estensione mente, il magic number
+no.
 
-## Nota di pubblicazione
+```
+--[ eof ]---------------------------------------------------------------
 
-Questo writeup è la versione pubblicabile su GitHub secondo la dottrina BreachLab (`RULES · OPS DOCTRINE`): insegna il metodo (identificazione di formati file tramite magic number e decompressione a più livelli) senza rivelare la password/flag letterale del livello, in modo che chi legge debba comunque eseguire l'esercizio.
-
----
-
-## Crediti
-
-Livello e sfida a cura di **BreachLab** (https://breachlab.org) — Ghost Track.
+  breachlab.org · ghost track
+```

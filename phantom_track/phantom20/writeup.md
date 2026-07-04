@@ -1,39 +1,31 @@
-# Phantom Track - Phantom 20
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   phantom track · phile 0x14 · "am i contained?"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: phantom-20  "Am I Contained?"
+   class ...: container awareness / detection
+   status ..: [ ] not yet owned  ·  wip
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- **Track:** Phantom Track
-- **Livello:** Phantom 20 ("Am I Contained?")
-- **Fonte appunti:** `phantom_track/phantom20/notes.md`
+> livello non ancora risolto. la cartella tiene il posto; il writeup
+> arriva quando lo chiudo. niente note inventate, niente fuffa.
 
-## Obiettivo
+## ----[ 0x00 · status ]----
 
-Le note per questo livello non sono state registrate (`notes.md` risulta vuoto, stato "nessuna nota registrata"). Non è quindi possibile ricostruire dagli appunti l'obiettivo specifico assegnato dal livello.
+Ancora aperto. Nessuna nota operativa registrata per questo livello, quindi
+qui non c'è recon né exploit da raccontare: aggiungerli senza averlo
+risolto vorrebbe dire inventare, e non si fa.
 
-## Ricognizione
+Il nome del livello ("Am I Contained?") suggerisce il tema — container awareness / detection — ma il metodo
+verrà documentato solo dopo averlo davvero eseguito.
 
-Nessuna evidenza di ricognizione disponibile per questo livello.
+```
+--[ wip ]---------------------------------------------------------------
 
-## Tecnica
-
-Non determinabile dagli appunti disponibili.
-
-## Sfruttamento
-
-Nessun passo documentato.
-
-## Risultato
-
-Non ci sono evidenze sufficienti per ricostruire la soluzione di questo livello. Nessun dato sensibile è presente in questo file, quindi non c'è nulla da redigere.
-
-## Nota di pubblicazione
-
-Questo writeup è la versione pubblicabile su GitHub secondo la dottrina BreachLab (`RULES · OPS DOCTRINE`). Viene pubblicato onestamente come "incompleto" piuttosto che con contenuti inventati: BreachLab richiede di insegnare il metodo realmente usato, mai di simulare una soluzione non documentata.
-
----
-
-## Crediti
-
-Livello e sfida a cura di **BreachLab** (https://breachlab.org) — Phantom Track.
+  breachlab.org · phantom track · torna più tardi
+```

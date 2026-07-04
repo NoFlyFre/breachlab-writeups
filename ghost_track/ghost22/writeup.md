@@ -1,55 +1,75 @@
-# Ghost Track - Ghost 22
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   ghost track · phile 0x16 · CLASSIFIED · "graduation"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: ghost-22  "Graduation"  [final]
+   class ...: capstone · strings + base64 + SUID
+   tools ...: file · strings · base64 · find · nc
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- **Track:** Ghost Track
-- **Livello:** Ghost 22 · CLASSIFIED ("Graduation")
-- **Fonte appunti:** `ghost_track/ghost22/notes.md`
+> l'esame di maturità del Ghost Track. un file classificato spezzato in
+> tre shard, ognuno chiuso con una tecnica diversa dei 22 livelli
+> precedenti. si recuperano tutti e tre e si consegnano al gatekeeper.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Livello finale del Ghost Track: un unico file "classificato" è stato spezzato in tre shard, ciascuno protetto con una tecnica diversa incontrata nei 22 livelli precedenti (dati nascosti in un blob binario, dati codificati per il trasporto, dati dietro un helper SUID). Bisogna recuperare tutti e tre gli shard e inviarli a un "gatekeeper" in ascolto su TCP `:31339`, nel formato esatto `SHARD1:<val>|SHARD2:<val>|SHARD3:<val>`.
+Livello finale del Ghost Track: un file classificato è stato spezzato in
+tre shard, ognuno protetto con una tecnica già vista (dati in un blob
+binario, dati codificati per il trasporto, dati dietro un helper SUID).
+Vanno recuperati tutti e tre e inviati a un gatekeeper su TCP `:31339`,
+nel formato esatto `SHARD1:<val>|SHARD2:<val>|SHARD3:<val>`.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-Nella home sono presenti tre file rilevanti: `BRIEFING` (testo UTF-8 con le istruzioni), `relic.bin` (8215 byte, identificato da `file` come semplice `data`, cioè binario senza struttura riconoscibile) e `scroll.b64` (25 byte, testo ASCII). Il `BRIEFING` conferma la missione: tre shard, tre tecniche, un gatekeeper di rete che valida il formato combinato.
+Nella home tre file utili: `BRIEFING` (UTF-8, istruzioni), `relic.bin`
+(8215 byte, `file` lo dà come `data`, binario senza struttura) e
+`scroll.b64` (25 byte, ASCII). Il `BRIEFING` conferma la missione: tre
+shard, tre tecniche, un gatekeeper di rete che valida il formato
+combinato.
 
-## Tecnica
+## ----[ 0x02 · il difetto ]----
 
-Il livello è un riepilogo delle tecniche viste nel corso del Ghost Track, applicate in sequenza:
+Capstone: un riepilogo delle tecniche del track applicate in fila.
 
-- **Shard 1 — "buried in a binary blob":** estrazione di stringhe leggibili da un file binario con `strings`, per isolare testo ASCII annegato in un blob altrimenti privo di struttura riconoscibile.
-- **Shard 2 — "encoded for transport":** decodifica Base64 di un file di testo che contiene dati codificati per il trasporto, la stessa tecnica di codifica vista in altri livelli del track.
-- **Shard 3 — "guarded by a SUID helper":** recupero tramite un binario con bit SUID impostato, tecnica di privilege escalation/accesso controllato tipica del track.
+- **Shard 1 — "buried in a binary blob":** stringhe leggibili da un
+  binario con `strings`, per isolare ASCII annegato in un blob.
+- **Shard 2 — "encoded for transport":** decodifica Base64 di un file di
+  testo, la stessa codifica vista altrove nel track.
+- **Shard 3 — "guarded by a SUID helper":** recupero via un binario SUID,
+  la privesc/accesso controllato tipica del track.
 
-## Sfruttamento
+## ----[ 0x03 · exploit ]----
 
-1. Enumerazione della home e identificazione dei tre file rilevanti:
+1. Enumerazione e tre file utili:
 
 ```bash
 ll
-total 76
 ...
 -rw-r----- 1 ghost22 ghost22  343 Jun 22 13:41 BRIEFING
 -rw-r----- 1 ghost22 ghost22 8215 Jun 22 13:41 relic.bin
 -rw-r----- 1 ghost22 ghost22   25 Jun 22 13:41 scroll.b64
 ```
 
-2. Identificazione del tipo reale di ciascun file:
+2. Tipo reale di ciascuno:
 
 ```bash
-file BRIEFING relic.bin scroll.b64 
+file BRIEFING relic.bin scroll.b64
 BRIEFING:   Unicode text, UTF-8 text
 relic.bin:  data
 scroll.b64: ASCII text
 ```
 
-3. Lettura del briefing operativo, che conferma la missione e il formato di invio al gatekeeper:
+3. Briefing operativo, che conferma missione e formato:
 
 ```bash
-cat BRIEFING 
+cat BRIEFING
 GRADUATION — OPERATIVE BRIEFING
 ================================
 
@@ -64,42 +84,40 @@ Format (exact): SHARD1:<val>|SHARD2:<val>|SHARD3:<val>
 KAEL, out.
 ```
 
-4. Estrazione delle stringhe leggibili dal blob binario `relic.bin` con `strings`: tra il rumore binario compare un marcatore chiaro che delimita lo Shard 1:
+4. Stringhe da `relic.bin`: tra il rumore, un marcatore delimita lo
+   Shard 1:
 
 ```bash
-strings relic.bin 
+strings relic.bin
 ...
 ::SHARD1:<REDACTED>::
 ...
 ```
 
-5. Lettura e decodifica di `scroll.b64`, un payload Base64:
+5. `scroll.b64`, payload Base64 → Shard 2:
 
 ```bash
-cat scroll.b64 
+cat scroll.b64
 <REDACTED_BASE64>
 ```
 
-Decodificando questa stringa si ottiene il secondo shard.
+6. Shard 3 dall'helper SUID sul sistema (`find / -perm -4000` per
+   individuarlo, poi esecuzione secondo il comportamento previsto).
 
-6. Recupero dello Shard 3 tramite l'helper SUID presente sul sistema (individuazione del binario SUID, es. con `find / -perm -4000`, ed esecuzione secondo il comportamento previsto dall'helper).
-
-7. Composizione della stringa finale nel formato richiesto e invio al gatekeeper su TCP `:31339`:
+7. Composizione finale e invio al gatekeeper su TCP `:31339`:
 
 ```text
 SHARD1:<REDACTED>|SHARD2:<REDACTED>|SHARD3:<REDACTED>
 ```
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-I tre shard vengono recuperati con tre tecniche distinte — estrazione di stringhe da binario (`strings`), decodifica Base64, e sfruttamento di un helper SUID — e combinati nel formato richiesto per essere inviati al gatekeeper TCP, completando la graduazione del Ghost Track. I valori letterali non sono riportati qui per rispetto della dottrina "no spoilers" di BreachLab.
+Tre shard, tre tecniche — `strings`, Base64, helper SUID — combinati nel
+formato richiesto e consegnati al gatekeeper: Ghost Track completato
+(valori fuori dal writeup). Diploma in tasca.
 
-## Nota di pubblicazione
+```
+--[ eof ]---------------------------------------------------------------
 
-Questo writeup è la versione pubblicabile su GitHub secondo la dottrina BreachLab (`RULES · OPS DOCTRINE`): insegna il metodo (estrazione di stringhe da binari, decodifica Base64, sfruttamento di helper SUID) senza rivelare i valori letterali degli shard o la flag finale, in modo che chi legge debba comunque eseguire l'esercizio.
-
----
-
-## Crediti
-
-Livello e sfida a cura di **BreachLab** (https://breachlab.org) — Ghost Track.
+  breachlab.org · ghost track
+```

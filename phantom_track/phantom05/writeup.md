@@ -1,49 +1,86 @@
-# Phantom Track - Phantom 5
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   phantom track · phile 0x05 · "file authority"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: phantom-05  "File Authority"
+   class ...: group abuse (shadow) · offline hash cracking
+   tools ...: find · cat /etc/shadow · hashcat/john · su
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Phantom
-- Livello: Phantom 5 ("File Authority")
-- Fonte appunti: `phantom_track/phantom05/notes.md`
+> l'utente sta nel gruppo `shadow`, che di norma nessun mortale dovrebbe
+> avere. legge `/etc/shadow`, cracca offline l'unico hash debole (root è
+> bloccato), e fa `su` sull'account che possiede la flag.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Il brief ("File Authority") spiega che l'utente del livello appartiene a un gruppo Unix "interessante" — un gruppo che determina cosa si può leggere sul sistema, e che non dovrebbe mai essere assegnato a utenti normali. L'obiettivo è capire di che gruppo si tratta, cosa permette di leggere, leggere ciò che normalmente non si potrebbe leggere, e craccare offline l'unico hash effettivamente craccabile trovato — che appartiene a un account diverso dall'utente di partenza, il quale è sia il pivot target sia il proprietario della flag. Il brief specifica esplicitamente che root è bloccato su questa macchina: l'hash di root non è craccabile, mentre quello dell'account target lo è.
+Il brief: l'utente appartiene a un gruppo Unix "interessante" che
+determina cosa si può leggere e che non andrebbe mai dato a utenti
+normali. Obiettivo: capire quale, leggere ciò che non si dovrebbe, e
+craccare offline l'unico hash effettivamente craccabile — quello di un
+account diverso, che è sia il pivot sia il proprietario della flag. Root è
+bloccato: il suo hash non è craccabile, quello del target sì.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-L'enumerazione dei file appartenenti al gruppo `shadow` rivela, oltre ai binari di sistema attesi (utility con bit setgid come `chage`, `expiry`, `unix_chkpwd`), i file `/etc/shadow` e `/etc/gshadow` (e i relativi backup) leggibili dal gruppo. Questo indica che l'utente del livello appartiene al gruppo `shadow`, un gruppo che su un sistema Linux standard concede la lettura del database delle password hashate — un privilegio che normalmente nessun utente non amministrativo dovrebbe avere.
+Enumerando i file del gruppo `shadow` compaiono, oltre ai binari setgid
+attesi (`chage`, `expiry`, `unix_chkpwd`), `/etc/shadow` e `/etc/gshadow`
+(e backup) leggibili dal gruppo. Quindi l'utente sta nel gruppo `shadow`,
+che su Linux concede la lettura del database delle password hashate — un
+privilegio che nessun utente non amministrativo dovrebbe avere.
 
-## Tecnica
+## ----[ 0x02 · il difetto ]----
 
-La tecnica sfruttata è l'abuso dell'appartenenza al gruppo `shadow` per leggere `/etc/shadow` (operazione normalmente riservata a root), seguita da cracking offline con dizionario dell'unico hash effettivamente crackabile nel file — gli altri account hanno hash bloccati o, nel caso di root, un prefisso che ne indica l'account disabilitato/non craccabile in questo contesto. Una volta ottenuta la password in chiaro dell'account target, la tecnica prosegue con un cambio di utente (`su`) per accedere ai file di proprietà di quell'account, incluso la flag protetta.
+Abuso dell'appartenenza al gruppo `shadow` per leggere `/etc/shadow`
+(normalmente solo root), poi cracking offline con dizionario dell'unico
+hash craccabile del file — gli altri sono bloccati, e root ha un prefisso
+da account disabilitato. Ottenuta la password in chiaro del target, si fa
+`su` per accedere ai suoi file, flag inclusa.
 
-## Sfruttamento
+## ----[ 0x03 · exploit ]----
 
-1. Enumerazione dei file appartenenti al gruppo `shadow` con `find`, che rivela l'accesso in lettura al database delle password oltre ai normali binari di sistema con bit setgid.
+1. `find` sui file del gruppo `shadow` → accesso in lettura al DB
+   password oltre ai binari setgid.
 
-2. Lettura diretta di `/etc/shadow`, resa possibile dall'appartenenza al gruppo `shadow` (un tentativo di lettura senza quel gruppo fallirebbe con "Permission denied", come dimostra un primo tentativo fallito con path relativo). L'estratto rilevante mostra l'hash di root con un prefisso che ne indica l'account bloccato (non autenticabile via password), e una lunga lista di altri account con hash di tipo `yescrypt` validi.
+2. Lettura diretta di `/etc/shadow`, possibile grazie al gruppo (un
+   tentativo senza fallirebbe con "Permission denied"). L'hash di root ha
+   un prefisso da account bloccato; gli altri sono `yescrypt` validi.
 
-3. Identificazione dell'hash target — l'unico effettivamente craccabile con un dizionario comune, appartenente a un account di supporto diverso da quello del solutore — e cracking offline con dizionario (tool tipo `hashcat`/`john`, wordlist tipo rockyou, come suggerito dai riferimenti del brief). La password in chiaro risulta una parola comune presente in wordlist standard.
+3. Identificazione dell'hash target — l'unico craccabile con una wordlist
+   comune, di un account di supporto diverso dal solutore — e cracking
+   offline (`hashcat`/`john`, wordlist tipo rockyou come da brief). La
+   password risulta una parola comune.
 
-4. Cambio utente verso l'account target con la password appena craccata (`su <utente>`).
+4. Cambio utente col crack:
 
-5. Navigazione verso la home dell'account target ed enumerazione dei file di sua proprietà nel filesystem con `find / -user <utente>`.
+```bash
+su <utente>
+```
 
-6. Lettura della flag, ora accessibile con l'identità dell'account target.
+5. Home del target ed enumerazione dei suoi file:
 
-## Risultato
+```bash
+find / -user <utente> 2>/dev/null
+```
 
-Sfruttando l'appartenenza indebita al gruppo `shadow` è stato possibile leggere `/etc/shadow`, individuare l'unico hash password realmente craccabile, craccarlo offline con dizionario, ed effettuare un cambio utente per leggere la flag di proprietà di quell'account. I valori letterali (hash, password in chiaro, flag) non vengono riportati qui: `<REDACTED_HASH>`, `<REDACTED_PASSWORD>`, `<REDACTED_FLAG>`. Il livello ha insegnato l'analisi dei privilegi di gruppo Unix con impatto sulla sicurezza (in particolare `shadow`) e il cracking offline responsabile di hash di password, senza alcun brute force diretto contro servizi live.
+6. Lettura della flag, ora accessibile con la sua identità.
 
-## Nota di pubblicazione
+## ----[ 0x04 · loot ]----
 
-Questo writeup è la versione pubblica (GitHub) delle note personali sul livello Phantom 5 di BreachLab. In conformità alla dottrina BreachLab (Writeups · Creators), il documento insegna il metodo — analisi dei privilegi di gruppo Unix pericolosi, lettura autorizzata (dal punto di vista del sistema operativo, anche se non prevista) di `/etc/shadow`, e cracking offline con dizionario — ma non riporta hash, password in chiaro o la flag finale, che il solutore deve ottenere in autonomia ripetendo l'analisi sul proprio ambiente, nel rispetto della regola "no brute force" contro l'infrastruttura viva (il cracking qui è sempre offline, contro un hash già esfiltrato legittimamente).
+Gruppo `shadow` indebito → lettura di `/etc/shadow` → crack offline
+dell'unico hash debole → `su` → flag (valori fuori dal writeup:
+`<REDACTED_HASH>`, `<REDACTED_PASSWORD>`, `<REDACTED_FLAG>`). Nessun brute
+force su servizi vivi: il crack è sempre offline su un hash già
+esfiltrato. Lezione: `shadow` in mano a un utente normale è game over.
 
----
+```
+--[ eof ]---------------------------------------------------------------
 
-## Crediti
-
-Livello svolto su BreachLab (breachlab.org), Phantom Track. Credit a BreachLab per la piattaforma e il design del livello.
+  breachlab.org · phantom track
+```

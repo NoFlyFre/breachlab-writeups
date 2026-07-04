@@ -1,52 +1,74 @@
-# Ghost Track - Ghost 12
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   ghost track · phile 0x0c · "harvested key"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: ghost-12  "Harvested Key"
+   class ...: ssh · leaked key reuse
+   tools ...: ssh -i
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Ghost Track
-- Livello: Ghost 12 → Ghost 13 ("Harvested Key")
-- Fonte appunti: `ghost_track/ghost12/notes.md`
+> niente password stavolta: una chiave privata SSH sgraffignata da un
+> jump host. nessuna passphrase, e l'account target la accetta ancora.
+> key reuse da manuale.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Il livello 12 non fornisce una password: fornisce una chiave privata SSH sottratta durante un'operazione precedente su un jump host. L'obiettivo dichiarato è autenticarsi come l'utente successivo della catena usando quella chiave, dimostrando la comprensione dell'autenticazione SSH a chiave pubblica.
+Il livello non dà una password, dà una chiave privata SSH sottratta in
+un'operazione precedente su un jump host. Obiettivo: autenticarsi come
+l'utente successivo con quella chiave, dimostrando di capire l'auth SSH a
+chiave pubblica.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-Nella home dell'utente è presente una cartella di "loot" con tre file:
+Nella home una cartella di loot con tre file: un memo operativo, una
+chiave privata ed25519 e la pubblica corrispondente. Il memo dice tutto:
+la chiave viene dall'account SSH di un servizio di automazione su un jump
+host, non ha passphrase, ed è ancora accettata dall'account target.
 
-- un memo operativo in formato testo
-- una chiave privata ed25519
-- la chiave pubblica corrispondente
+Due dettagli d'oro: usabile subito (niente passphrase da craccare), e il
+target ha ancora la pubblica corrispondente in `authorized_keys`, perché
+veniva da un account di servizio con accesso legittimo a più host dallo
+stesso jump host.
 
-Il memo chiarisce provenienza e stato della chiave: proviene dall'account SSH di un servizio di automazione su un jump host, non è protetta da passphrase, ed è ancora accettata dall'account target.
+## ----[ 0x02 · il difetto ]----
 
-Due dettagli chiave: la chiave è immediatamente utilizzabile (nessuna passphrase da craccare), e l'account target ha ancora la chiave pubblica corrispondente nel proprio `authorized_keys`, perché proveniva da un account di servizio che aveva accesso legittimo a più host tramite lo stesso jump host.
+Caso da manuale di **key reuse**: una chiave pensata per un account di
+automazione, trovata su un sistema compromesso, vale anche per un account
+diverso su un host diverso. Nel mondo reale succede quando la stessa
+chiave viene distribuita a più macchine per comodità (deploy
+automatizzato), senza rotazione né restrizioni per host. Chi compromette
+un solo host che la detiene eredita l'accesso a tutti quelli che la
+accettano.
 
-## Tecnica
+L'auth a chiave pubblica: il client firma una sfida con la privata, il
+server verifica con la pubblica in `~/.ssh/authorized_keys`. Nessuna
+password se la privata è valida e senza passphrase.
 
-Questo è un caso da manuale di **riutilizzo di credenziali/chiavi trapelate (credential/key reuse)**: una chiave SSH pensata per un account di automazione viene trovata su un sistema compromesso e risulta valida anche per un account diverso su un host diverso. In un contesto reale questo accade quando la stessa chiave viene distribuita a più macchine per comodità operativa (deployment automatizzato), senza rotazione o restrizioni per host. Chi compromette un solo host che detiene la chiave eredita l'accesso a tutti i sistemi che la accettano.
+## ----[ 0x03 · exploit ]----
 
-L'autenticazione a chiave pubblica SSH funziona così: il client dimostra di possedere la chiave privata firmando una sfida crittografica; il server verifica la firma con la chiave pubblica presente in `~/.ssh/authorized_keys`. Non è necessaria alcuna password se la chiave privata è valida e non protetta da passphrase (o se la passphrase è nota).
-
-## Sfruttamento
-
-1. Enumerazione della home directory e della cartella di loot, dove sono stati depositati gli artefatti recuperati dal jump host:
+1. Enumerazione della home e della cartella di loot:
 
 ```bash
 ll
 total 40
-drwx------ 1 <user> <user> 4096 Jun 22 13:41 ./
-drwx------ 1 <user> <user> 4096 Jun 22 19:46 ../
+...
 -rw-r--r-- 1 <user> <user>  113 Jun 22 13:41 NOTES.txt
 -rw------- 1 <user> <user>  411 Jun 22 13:41 id_ed25519
 -rw-r--r-- 1 <user> <user>  100 Jun 22 13:41 id_ed25519.pub
 ```
 
-2. Lettura del memo per capire provenienza e stato della chiave (nessuna passphrase, ancora fidata dall'account target).
+2. Lettura del memo: provenienza, niente passphrase, ancora fidata dal
+   target.
 
-3. Verifica del contenuto della chiave privata (formato OpenSSH standard — il materiale crittografico reale non viene riportato qui):
+3. La chiave privata è in formato OpenSSH standard (materiale reale fuori
+   dal writeup):
 
 ```text
 -----BEGIN OPENSSH PRIVATE KEY-----
@@ -54,24 +76,24 @@ drwx------ 1 <user> <user> 4096 Jun 22 19:46 ../
 -----END OPENSSH PRIVATE KEY-----
 ```
 
-4. Autenticazione diretta verso l'account target usando l'opzione `-i` di `ssh` per specificare la chiave privata da usare al posto della password:
+4. Autenticazione al target con `-i`, la chiave al posto della password:
 
 ```bash
 ssh -i id_ed25519 <target_user>@<host> -p <port>
 ```
 
-L'host non era mai stato contattato prima dal client, quindi SSH chiede conferma del fingerprint della chiave host (TOFU — trust on first use) prima di proseguire. Accettando, la connessione va a buon fine e la sessione si apre come l'utente target senza alcuna password.
+Host mai contattato prima → SSH chiede conferma del fingerprint (TOFU).
+Accettando, la sessione si apre come l'utente target senza password.
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-Accesso ottenuto tramite autenticazione a chiave pubblica, senza craccare nulla: la chiave era valida e senza passphrase. Il login sblocca il livello successivo, che introduce un servizio TCP personalizzato con cui dialogare per ottenere la credenziale dell'account seguente.
+Accesso via chiave pubblica, senza craccare niente: la chiave era valida
+e senza passphrase. Il login sblocca il livello dopo, che introduce un
+servizio TCP custom con cui dialogare. Lezione: una chiave che gira su
+troppe macchine è un anello che apre l'intera catena.
 
-## Nota di pubblicazione
+```
+--[ eof ]---------------------------------------------------------------
 
-Questa è la versione pensata per la pubblicazione su GitHub, in conformità con la dottrina BreachLab: insegna il metodo (identificazione e uso di una chiave SSH trapelata per credential reuse) senza riportare la chiave privata reale, gli indirizzi/porte specifici del lab o altri valori che permetterebbero di saltare direttamente alla soluzione.
-
----
-
-## Crediti
-
-Livello e piattaforma: BreachLab (breachlab.org) — Ghost Track. Se questo writeup genera revenue, parte del ricavato va devoluta secondo la dottrina "if it earns, give back" di BreachLab.
+  breachlab.org · ghost track
+```

@@ -1,25 +1,31 @@
-# Phantom Track - Phantom 28
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   phantom track · phile 0x1c · "the heist"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: phantom-28  "The Heist"
+   class ...: exfiltration / operations
+   status ..: [ ] not yet owned  ·  wip
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Phantom Track
-- Livello: Phantom 28 ("The Heist")
-- Fonte appunti: `phantom_track/phantom28/notes.md`
+> livello non ancora risolto. la cartella tiene il posto; il writeup
+> arriva quando lo chiudo. niente note inventate, niente fuffa.
 
-## Nota
+## ----[ 0x00 · status ]----
 
-Per questo livello non sono disponibili appunti grezzi: `phantom_track/phantom28/notes.md` riporta lo stato "nessuna nota registrata" e non contiene alcuna cronologia di comandi, output o osservazioni relative alla risoluzione del livello.
+Ancora aperto. Nessuna nota operativa registrata per questo livello, quindi
+qui non c'è recon né exploit da raccontare: aggiungerli senza averlo
+risolto vorrebbe dire inventare, e non si fa.
 
-Di conseguenza non è possibile produrre in questa fase un writeup tecnico completo (obiettivo, ricognizione, tecnica, sfruttamento, risultato) senza inventare contenuto non verificato. Per evitare di introdurre tecniche o dettagli fittizi non riscontrati nelle note originali, questo file resta un placeholder onesto in attesa che vengano registrati appunti reali per il livello.
+Il nome del livello ("The Heist") suggerisce il tema — exfiltration / operations — ma il metodo
+verrà documentato solo dopo averlo davvero eseguito.
 
-## Nota di pubblicazione
+```
+--[ wip ]---------------------------------------------------------------
 
-Non essendoci al momento contenuto tecnico da esporre, questa versione censored coincide di fatto con la versione clean: non c'è nulla da redigere perché non c'è alcun valore sensibile riportato. Quando il livello verrà documentato con appunti reali, questo file andrà riscritto seguendo la struttura standard (Obiettivo, Ricognizione, Tecnica, Sfruttamento, Risultato) con i valori letterali (flag/password/secret) sostituiti da `<REDACTED>`, secondo la dottrina BreachLab.
-
----
-
-## Crediti
-
-Lab: BreachLab — https://breachlab.org (Phantom Track).
+  breachlab.org · phantom track · torna più tardi
+```

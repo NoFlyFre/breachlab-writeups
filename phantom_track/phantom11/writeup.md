@@ -1,69 +1,87 @@
-# Phantom Track - Phantom 11
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   phantom track · phile 0x0b · "token hunter"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: phantom-11  "Token Hunter"
+   class ...: git history archaeology · secret recovery
+   tools ...: git log · git show
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Phantom Track
-- Livello: Phantom 11 ("Token Hunter")
-- Fonte appunti: `phantom_track/phantom11/notes.md`
+> un repo con un revert a metà e un conflitto proprio sul file dei
+> segreti. git non dimentica: il valore "rimosso" è ancora nel diff, sulla
+> riga col `-`.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-La missione chiede di cacciare token e credenziali moderne oltre alle semplici password: JWT, API key, credenziali cloud, service account token. La macchina si collega a servizi cloud e API interne; bisogna trovare ogni token possibile, decodificare quello che si può, e uno di questi token è il flag del livello.
+La missione: cacciare token e credenziali moderne oltre alle password —
+JWT, API key, credenziali cloud, service account token. La macchina si
+collega a servizi cloud e API interne; uno di quei token è la flag.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-Nella home dell'operatore è presente un repository git con permessi leggibili dall'utente. Il repository non è "pulito": ci sono file di stato residui di un merge/revert interrotto (file come `AUTO_MERGE`, `MERGE_MSG`, `REVERT_HEAD`, `COMMIT_EDITMSG`), segno che sono state eseguite operazioni git recenti (revert di un commit) lasciando tracce nella working area, oltre ovviamente a tutta la cronologia negli oggetti e nei riferimenti del repository.
+Nella home un repo git leggibile. Non è pulito: file di stato di un
+merge/revert interrotto (`AUTO_MERGE`, `MERGE_MSG`, `REVERT_HEAD`,
+`COMMIT_EDITMSG`), segno di operazioni git recenti. Ispezionandoli, è in
+corso (o appena avvenuto) il revert di un commit di config iniziale, con
+un conflitto proprio su un file di env var — forte indizio che quel file,
+in una versione precedente, conteneva segreti.
 
-Ispezionando i file di stato si scopre che è in corso (o appena avvenuto) il revert di un commit di configurazione iniziale, con un conflitto segnalato proprio su un file di variabili d'ambiente — un forte indizio che quel file, in una versione precedente della storia, conteneva segreti.
+## ----[ 0x02 · il difetto ]----
 
-## Tecnica
+**Git history archaeology**: anche se un commit successivo rimuove o
+oscura un segreto, il valore originale resta nella history, perché git
+conserva ogni versione come oggetto immutabile finché non c'è un gc
+aggressivo o una riscrittura. `git log` enumera i commit; `git show
+<hash>` mostra il diff, inclusi quelli che *rimuovono* segreti — con il
+valore vecchio (`-`) e quello nuovo (`+`). Qui il commit in testa (messaggio
+sulla rimozione segreti) sostituisce valori reali con placeholder, ma la
+riga `-` contiene ancora l'originale in chiaro.
 
-La tecnica è "git history archaeology": anche quando un commit successivo rimuove o oscura un segreto da un file, il valore originale resta comunque recuperabile nella cronologia del repository, perché git conserva ogni versione di ogni file come oggetto immutabile finché non viene fatto un garbage collection aggressivo o una riscrittura della storia. Con `git log` si enumerano i commit; con `git show <hash>` si può visualizzare il diff introdotto da un commit specifico, inclusi i diff che *rimuovono* segreti — che mostrano sia il valore vecchio (rimosso, prefisso `-`) sia quello nuovo (prefisso `+`).
+## ----[ 0x03 · exploit ]----
 
-In questo caso il commit in testa al branch (con messaggio relativo alla rimozione di segreti) mostra proprio un diff sul file di variabili d'ambiente che sostituisce dei valori reali con placeholder — ma la riga con il prefisso `-` nel diff contiene ancora il valore originale in chiaro, perché è ciò che c'era *prima* della rimozione.
-
-## Sfruttamento
-
-1. Lettura del brief della missione per capire l'obiettivo:
+1. Brief:
 
 ```bash
 cat BRIEFING
 ```
 
-2. Ingresso nella directory `.git` del repository presente nella home ed enumerazione dei file di stato:
+2. `.git` e file di stato:
 
 ```bash
 cd .git
 ll
 ```
 
-Si notano file di stato di operazioni git recenti oltre alla struttura standard del repository.
-
-3. Lettura rapida dei file di stato per capire cosa fosse in corso:
+3. Lettura rapida dei file di stato:
 
 ```bash
 cat *
 ```
 
-Emerge che è stato fatto un revert di un commit di configurazione, con un conflitto segnalato su un file sensibile.
+Revert di un commit di config, conflitto su un file sensibile.
 
-4. Enumerazione della cronologia dei commit:
+4. Cronologia:
 
 ```bash
 git log
 ```
 
-Si trovano due commit: uno di configurazione iniziale e uno più recente relativo alla rimozione di segreti, in testa al branch.
+Due commit: config iniziale e rimozione segreti in testa.
 
-5. Visualizzazione del diff introdotto dal commit più recente per capire cosa è stato "rimosso":
+5. Diff del commit più recente:
 
 ```bash
 git show
 ```
 
-Il diff mostra chiaramente i valori originali (righe `-`) prima che venissero sostituiti con placeholder (righe `+`):
+I valori originali (righe `-`) prima dei placeholder (righe `+`):
 
 ```text
 diff --git a/.env b/.env
@@ -77,16 +95,14 @@ index 1db2a85..c935363 100644
 +DB_URL=REDACTED
 ```
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-La cronologia git ha rivelato, nel diff del commit di "pulizia", il valore originale del segreto applicativo che rappresenta il token/flag del livello, oltre a una connection string di database contenente credenziali (entrambi i valori sono stati omessi in questa versione pubblica). L'esercizio dimostra concretamente quanto sia pericoloso committare credenziali anche se "rimosse" in un commit successivo: la cronologia le conserva comunque.
+La history rivela nel diff di "pulizia" il segreto applicativo (la flag) e
+una connection string di db (valori omessi). Lezione concreta: committare
+credenziali e "rimuoverle" dopo non serve a nulla — la history le tiene.
 
-## Nota di pubblicazione
+```
+--[ eof ]---------------------------------------------------------------
 
-Questa è la versione pubblicabile su GitHub secondo la dottrina BreachLab: spiega per intero il metodo (ispezione della cronologia git con `git log`/`git show` per recuperare segreti da commit che li "rimuovono" senza riscrivere la storia) ma omette i valori reali dei segreti recuperati, per non fornire una scorciatoia a chi non ha ancora risolto il livello.
-
----
-
-## Crediti
-
-Livello risolto su BreachLab (https://breachlab.org), Phantom Track. Writeup pubblicato nel rispetto della dottrina "no spoilers" della piattaforma.
+  breachlab.org · phantom track
+```

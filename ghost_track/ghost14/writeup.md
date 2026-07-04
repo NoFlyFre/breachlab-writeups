@@ -1,54 +1,83 @@
-# Ghost Track - Ghost 14
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   ghost track · phile 0x0e · "tls only"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: ghost-14  "TLS Only"
+   class ...: tls · manual client handshake
+   tools ...: openssl s_client
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Ghost Track
-- Livello: Ghost 14 ("TLS Only")
-- Fonte appunti: `ghost_track/ghost14/notes.md`
+> stesso gioco dei broker precedenti, ma il socket non parla in chiaro:
+> vuole un ClientHello TLS. `nc` non basta più — serve un client che
+> sappia stringere la mano.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Recuperare la password per l'utente del livello successivo. Il livello espone un endpoint di controllo TCP che, a differenza dei livelli precedenti della stessa catena, non parla testo in chiaro: risponde solo se il client apre correttamente una sessione TLS. Un semplice `nc` verso quella porta non ottiene nulla di utile perché il socket si aspetta un ClientHello TLS, non testo grezzo.
+Recuperare la password del livello dopo. L'endpoint di controllo TCP, a
+differenza dei precedenti, risponde solo se il client apre correttamente
+una sessione TLS. Un `nc` verso quella porta non cava un ragno dal buco:
+il socket aspetta un ClientHello, non testo grezzo.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-Il servizio è raggiungibile in locale su una porta TCP dedicata. Un tentativo diretto in chiaro non produce risposta valida. La consegna del livello suggerisce esplicitamente di cercare "un CLI che parla TLS": la scelta naturale è `openssl s_client`, lo strumento a riga di comando della suite OpenSSL pensato per aprire connessioni TLS manuali verso un servizio e interagire con lo stream applicativo una volta stabilito il canale cifrato.
+Servizio in locale su una porta TCP dedicata. Un tentativo in chiaro non
+produce risposta valida. Il brief suggerisce di cercare "un CLI che parla
+TLS": la scelta naturale è `openssl s_client`, pensato per aprire
+connessioni TLS manuali e interagire con lo stream applicativo una volta
+stabilito il canale.
 
-## Tecnica
+## ----[ 0x02 · il difetto ]----
 
-`openssl s_client -connect host:porta` apre una connessione TCP, esegue l'handshake TLS (TLSv1.3 in questo caso) e poi espone stdin/stdout come un tunnel testuale sopra quel canale cifrato — esattamente come farebbe `nc` su un servizio in chiaro. Il certificato del servizio è self-signed, quindi OpenSSL segnala un errore di verifica, ma la connessione TLS si stabilisce comunque: l'errore è solo un avviso sulla fiducia del certificato, non un blocco della sessione.
+`openssl s_client -connect host:porta` apre il TCP, fa l'handshake TLS
+(TLSv1.3 qui) e poi espone stdin/stdout come un tunnel testuale sopra il
+canale cifrato — come farebbe `nc` in chiaro. Il certificato è
+self-signed, quindi OpenSSL segnala un errore di verifica, ma la
+connessione si stabilisce comunque: è solo un avviso di fiducia, non un
+blocco.
 
-Una volta dentro la sessione cifrata, il servizio applicativo si comporta come i "broker" dei livelli precedenti: aspetta in input la password del livello corrente e, se corretta, restituisce la password del livello successivo. La particolarità di questo livello è che l'intero scambio avviene incapsulato in TLS anziché in chiaro, quindi serve un client capace di completare l'handshake prima di poter parlare con l'applicazione.
+Dentro la sessione cifrata, il servizio si comporta come i broker
+precedenti: aspetta la password del livello corrente e, se giusta,
+restituisce la successiva. La differenza è che tutto viaggia dentro TLS,
+quindi serve un client che completi l'handshake prima di poter parlare
+con l'applicazione.
 
-## Sfruttamento
+## ----[ 0x03 · exploit ]----
 
-1. Verifica degli strumenti disponibili in locale:
+1. Strumenti disponibili:
 
 ```bash
 openssl help
 ```
 
-Conferma che `s_client` è disponibile come sotto-comando per aprire connessioni TLS lato client.
+Conferma `s_client` come sotto-comando per connessioni TLS lato client.
 
-2. Prima connessione di prova per osservare l'handshake e il comportamento del servizio:
+2. Connessione di prova per osservare handshake e comportamento:
 
 ```bash
 openssl s_client --connect localhost:41311
 ```
 
-L'handshake TLS 1.3 si completa nonostante il certificato self-signed, il servizio invia dei Post-Handshake Session Ticket e infine chiede una password. Senza input in tempo utile, il socket si chiude con un errore SSL di EOF inatteso.
+L'handshake TLS 1.3 si completa (certificato self-signed), arrivano dei
+Post-Handshake Session Ticket e infine la richiesta di password. Senza
+input in tempo, il socket chiude con EOF SSL inatteso.
 
-3. Invio della password del livello corrente incanalata nello stream TLS, tramite `echo` in pipe verso `openssl s_client`:
+3. Invio della password corrente nello stream, `echo` in pipe:
 
 ```bash
 echo "<REDACTED>" | openssl s_client --connect localhost:41311
 ```
 
-Dopo un nuovo handshake, il servizio legge la password inviata via stdin e la valida.
+Dopo un nuovo handshake, il servizio legge la password da stdin e la
+valida.
 
-4. Il servizio risponde con la conferma e la password per il livello successivo:
+4. Risposta con la password del livello dopo:
 
 ```text
 Send the current level password:
@@ -56,16 +85,15 @@ Send the current level password:
 Correct! Next password: <REDACTED_FLAG>
 ```
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-Sessione TLS stabilita con successo verso il servizio di controllo tramite `openssl s_client`; password del livello corrente inviata correttamente nello stream cifrato e password del livello successivo ottenuta (valore omesso in questa versione pubblica).
+Sessione TLS stabilita con `openssl s_client`, password corrente inviata
+nello stream cifrato, password successiva ottenuta (valore omesso).
+Lezione: quando il servizio è TLS-only, `openssl s_client` è il tuo
+netcat.
 
-## Nota di pubblicazione
+```
+--[ eof ]---------------------------------------------------------------
 
-Questa è la versione pubblicabile su GitHub secondo la dottrina BreachLab: spiega per intero il metodo (uso di `openssl s_client` per interagire con un servizio TLS-only) ma omette la password del livello corrente e la password/flag ottenuta come risultato, per non fornire una scorciatoia a chi non ha ancora risolto il livello.
-
----
-
-## Crediti
-
-Livello risolto su BreachLab (https://breachlab.org), Ghost Track. Writeup pubblicato nel rispetto della dottrina "no spoilers" della piattaforma.
+  breachlab.org · ghost track
+```

@@ -1,31 +1,40 @@
-# Phantom Track - Phantom 8
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   phantom track · phile 0x08 · "live injection"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: phantom-08  "Live Injection"
+   class ...: process memory · ptrace · /proc/pid/mem
+   tools ...: ps · gdb -p · dd · strings
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Phantom Track
-- Livello: Phantom 8 — "Live Injection"
-- Fonte appunti: `phantom_track/phantom08/notes.md`
+> un demone tiene un segreto in RAM e non lo scrive mai su disco. gira col
+> tuo stesso UID e — colpo di scena — acconsente esplicitamente a farsi
+> tracciare. la memoria è più onesta del filesystem: la si legge.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Il brief (`cat ~/BRIEFING`) descrive la missione così:
+Dal brief:
 
 > A long-running process holds a secret in memory and never writes it to disk. You can see the process via /proc and, with the right capability, you can read what it is doing from the outside. Memory is more honest than the filesystem. Read it.
 >
 > The daemon runs as your own UID (phantom8) — /proc access is same-uid, no root required.
 
-L'obiettivo è recuperare un segreto che un processo demone tiene esclusivamente in RAM (mai scritto su disco), sfruttando il fatto che il demone gira con lo stesso UID dell'utente (`phantom8`), condizione che rende teoricamente possibile l'introspezione via `/proc` e `ptrace` senza bisogno di root.
+Obiettivo: recuperare un segreto che il demone tiene solo in RAM,
+sfruttando il fatto che gira come `phantom8` — condizione che rende
+possibile l'introspezione via `/proc` e `ptrace` senza root.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-Con `ps aux | grep phantom8` si individuano due processi rilevanti:
-
-- Un processo root (`runuser -u phantom8 -- python3 -c "..."`) — il wrapper che avvia il demone come `phantom8`.
-- Un processo `phantom8` figlio: il demone vero e proprio, un one-liner Python.
-
-Il comando completo del demone, ricostruito dall'output di `ps aux`, è:
+`ps aux | grep phantom8` mostra due processi: un wrapper root
+(`runuser -u phantom8 -- python3 -c "..."`) e il demone figlio come
+`phantom8`, un one-liner Python. Il comando completo, visibile in `ps`:
 
 ```python
 import sys
@@ -47,79 +56,83 @@ while True:
     time.sleep(60)
 ```
 
-Il codice stesso, lasciato visibile negli argomenti di `ps aux`, spiega già la configurazione di sicurezza dell'host: `yama.ptrace_scope=1` normalmente impedirebbe a un processo di attaccarsi con `ptrace` a un altro processo con lo stesso UID, a meno che il processo "tracciato" non acconsenta esplicitamente tramite `prctl(PR_SET_PTRACER, ...)`. Il demone chiama proprio questa funzione con `PR_SET_PTRACER_ANY` (`-1`), aprendo la porta a *qualunque* processo dello stesso utente che voglia allegarsi con GDB/ptrace.
+Il codice spiega da solo la sicurezza dell'host: `yama.ptrace_scope=1`
+bloccherebbe l'attach ptrace same-UID, ma il demone chiama
+`prctl(PR_SET_PTRACER, -1)` (`PR_SET_PTRACER_ANY`), aprendo a *qualunque*
+processo dello stesso utente. In `/proc/<pid>/`, `maps` e `status` sono
+`r--r--r--`, `mem` è `rw-------` (stesso UID) ed `environ` `r--------`.
+`cat /proc/<pid>/maps` dà le region: python3.10, librerie, `[heap]`,
+`[stack]`. L'heap è il candidato per la stringa letta da
+`stdin.readline()`.
 
-Enumerando `/proc/<pid>/` del demone con `ll` si osserva la struttura standard di procfs: `maps`, `mem`, `environ`, `status`, ecc. La maggior parte dei file ha dimensione 0 (procfs) ma permessi diversi: `maps` e `status` sono leggibili (`r--r--r--`), mentre `mem` è `rw-------` (accessibile solo al proprietario, coerente con l'UID condiviso) e `environ` è `r--------`.
+## ----[ 0x02 · il difetto ]----
 
-Con `cat /proc/<pid>/maps` si ottiene la mappa completa delle region di memoria del processo: il binario `python3.10`, le librerie condivise (`libc`, `libffi`, `libexpat`, `libm`, `ld-linux`), l'`[heap]` e lo `[stack]`. L'heap è il candidato più promettente per contenere la stringa letta da `stdin.readline()`.
+Due elementi:
 
-## Tecnica
+1. **PR_SET_PTRACER opt-in same-UID** — con `ptrace_scope=1` un processo è
+   tracciabile solo dal padre; il demone dichiara "chiunque col mio UID
+   può agganciarmi", quindi `gdb -p <pid>` funziona senza root e senza
+   toccare `ptrace_scope` (impossibile qui, `/proc/sys/kernel/yama` è
+   read-only nel container).
+2. **lettura memoria via `/proc/<pid>/mem`** — agganciati al processo, la
+   sua memoria si legge come un debugger. `/proc/<pid>/mem` è una finestra
+   sulla memoria virtuale: coi permessi giusti (stesso UID + ptrace
+   consentito) la si legge come file binario con `dd`, e `strings` isola
+   il testo leggibile da centinaia di KB di dump.
 
-La tecnica combina due elementi:
+## ----[ 0x03 · exploit ]----
 
-1. **`PR_SET_PTRACER` opt-in same-UID**: su Ubuntu con `yama.ptrace_scope=1`, un processo può normalmente essere tracciato solo dal proprio genitore diretto. Il demone, chiamando `prctl(PR_SET_PTRACER, -1)`, dichiara esplicitamente "qualsiasi processo dello stesso UID può allegarsi a me con ptrace/gdb". Questo è ciò che rende possibile l'attach con `gdb -p <pid>` da una shell qualunque con lo stesso UID, senza root e senza dover abbassare `ptrace_scope` a livello di sistema (impossibile qui, dato che `/proc/sys/kernel/yama` è montato read-only nel container).
-2. **Lettura della memoria di processo via GDB / `/proc/<pid>/mem`**: una volta agganciati al processo, si può leggere la memoria del processo target come farebbe un debugger. GDB offre diversi comandi per farlo (`x` per esaminare indirizzi, `find` per cercare pattern di byte), ma soprattutto `/proc/<pid>/mem` è un file "finestra" sulla memoria virtuale del processo che, con i permessi giusti (stesso UID + ptrace consentito), può essere letto direttamente come un file binario con `dd`, `cat` o qualsiasi tool che sappia fare seek+read. Combinando `dd` (per estrarre un range di byte a partire da un offset dell'heap) con `strings` (per isolare le sequenze di caratteri stampabili) si trasforma un dump binario di centinaia di KB in testo leggibile, dentro cui cercare la stringa che il demone ha letto da stdin e non ha mai scritto su disco.
+1. Attach fallito passando il PID come fosse un eseguibile → `No such file
+   or directory` (GDB lo interpreta come binario, non come PID).
 
-## Sfruttamento
+2. Attach corretto con `-p`:
 
-1. **Attach fallito senza contesto.** I primi tentativi di attach, fatti passando il PID come se fosse il nome di un eseguibile (es. `gdb <qualcosa che non è un'opzione valida>`), falliscono con `No such file or directory`, perché GDB in quella forma interpreta l'argomento come un binario da caricare, non come un PID a cui allegarsi.
+```bash
+gdb -p <PID>
+...
+Attaching to process <PID>
+warning: "target:/usr/bin/python3.10": could not open as an executable file: Operation not permitted.
+0x00007bc26823261d in ?? ()
+(gdb) info registers
+...
+```
 
-2. **Attach corretto con `-p`.**
+Riesce (grazie al `PR_SET_PTRACER_ANY`). I warning sui simboli sono
+attesi: GDB non può leggere il binario, quindi niente simboli, solo
+registri e memoria grezza.
 
-   ```bash
-   gdb -p <PID>
-   ...
-   Attaching to process <PID>
-   warning: "target:/usr/bin/python3.10": could not open as an executable file: Operation not permitted.
-   warning: `target:/usr/bin/python3.10': can't open to read symbols: Operation not permitted.
-   0x00007bc26823261d in ?? ()
-   (gdb) info registers
-   ...
-   ```
+3. `find` letterale della parola `"secret"` (nome della variabile, non il
+   valore) → nulla, ovviamente.
 
-   L'attach riesce (grazie al `PR_SET_PTRACER_ANY` impostato dal demone). I warning su `target:/usr/bin/python3.10` sono attesi: GDB non può leggere l'eseguibile stesso per risolvere i simboli (niente permesso di lettura sul binario), quindi il processo resta "senza simboli" — niente nomi di variabili o funzioni, solo registri e memoria grezza. `info registers` conferma comunque l'attach riuscito mostrando lo stato della CPU nel punto in cui il processo era fermo.
+4. Scansione dell'heap con `x/2000s <inizio_heap>`: migliaia di righe,
+   per lo più strutture interne di Python. Esaminare a mano con `x/s` non
+   è pratico: serve un dump massivo + filtro.
 
-3. **Ricerca diretta della stringa con `find` — fallita.**
+5. Tentativo di `dd` da dentro GDB → `Undefined command: "dd"` (è un
+   comando di shell, non di GDB). Si esce e si lancia dalla shell.
 
-   ```bash
-   (gdb) find <start_heap>, <end_heap>, "secret"
-   warning: Unable to access N bytes of target memory at ..., halting search.
-   Pattern not found.
-   ```
+6. `dd` + `strings` su `/proc/<pid>/mem` all'offset dell'heap (ricavato da
+   `maps`): dump di migliaia di righe, per lo più stringhe interne di
+   Python e il sorgente stesso del demone.
 
-   Cercare letteralmente la parola `"secret"` (il nome della variabile Python, non il suo contenuto) nell'heap e nello stack non produce risultati: ovviamente il nome della variabile non esiste come stringa in memoria, solo il suo valore — che non è ancora noto.
+7. Scorrendo fino in fondo, isolato e ripetuto due volte verso la coda,
+   compare il segreto — una stringa "reale" in mezzo al rumore di memoria.
 
-4. **Scansione manuale dell'heap con `x/2000s`.** Per farsi un'idea di cosa contenga davvero l'heap, si esamina un blocco ampio come sequenza di stringhe (`x/<N>s <indirizzo_inizio_heap>`). L'output — migliaia di righe, in gran parte stringhe vuote o frammenti binari non stampabili — conferma che l'heap è pieno di strutture interne dell'interprete Python (buffer, riferimenti, piccoli frammenti di encoding) ma esaminarlo byte per byte con `x/s` non è pratico: serve un dump massivo e un filtro per il testo leggibile.
+## ----[ 0x04 · loot ]----
 
-5. **Tentativo di dump raw da dentro GDB — fallito.**
-
-   ```bash
-   (gdb) dd if=/proc/<pid>/mem bs=1 skip=$(printf '%d' <offset_heap>) count=<N> 2>/dev/null | strings > ~/heap_dump.txt
-   Undefined command: "dd".  Try "help".
-   ```
-
-   `dd` non è un comando GDB (è un errore di contesto: si sta scrivendo un comando di shell dentro il prompt `(gdb)`). Bisogna uscire da GDB e lanciare `dd` direttamente nella shell, puntandolo su `/proc/<pid>/mem` con l'offset dell'heap ricavato da `maps`.
-
-6. **`dd` + `strings` sul file di memoria del processo, dalla shell.** Una volta fuori da GDB, `dd` legge un intervallo di byte a partire dall'offset dell'heap direttamente da `/proc/<pid>/mem` (permesso perché stesso UID e ptrace consentito), e la pipe verso `strings` isola le sequenze di testo stampabile. Il risultato è un dump di migliaia di righe: per la maggior parte si tratta di stringhe interne dell'interprete Python (nomi di moduli, docstring di `encodings`, `abc`, `signal`, `io`, frammenti di bytecode) mescolate a rumore binario. In mezzo a questo rumore compare anche il codice sorgente del demone stesso (l'interprete Python tiene il testo del proprio `-c` in memoria).
-
-7. **Individuazione del valore.** Scorrendo il dump di `strings` fino in fondo, tra frammenti di bytecode e stringhe binarie residue, compare — isolato e ben formato, ripetuto due volte verso la coda dell'output — il segreto cercato: il pattern tipico di una stringa "reale" scritta dal setup del livello in mezzo a rumore di memoria.
-
-## Risultato
-
-Il segreto tenuto in memoria dal demone e mai scritto su disco è stato recuperato con successo:
+Segreto tenuto solo in RAM recuperato via `/proc/<pid>/mem`, senza root,
+grazie all'opt-in `PR_SET_PTRACER_ANY` e a un `dd` + `strings` mirato
+sull'offset dell'heap:
 
 ```
 <REDACTED_FLAG>
 ```
 
-Recuperato leggendo la memoria di processo (heap) del demone tramite `/proc/<pid>/mem`, senza privilegi di root, sfruttando l'opt-in esplicito del demone a `PR_SET_PTRACER_ANY` e un dump `dd` + `strings` mirato sull'offset dell'heap ricavato da `/proc/<pid>/maps`.
+Lezione: se un processo acconsente al ptrace same-UID, la sua memoria è un
+file aperto — e la memoria non mente.
 
-## Nota di pubblicazione
+```
+--[ eof ]---------------------------------------------------------------
 
-Questa versione è pensata per la pubblicazione su GitHub secondo la dottrina operativa di BreachLab: il metodo (opt-in `PR_SET_PTRACER`, attach GDB same-UID, lettura di `/proc/<pid>/maps` e `/proc/<pid>/mem`, estrazione con `dd` + `strings`) è descritto per intero, perché lo scopo di un writeup è insegnare la tecnica. Il valore letterale del segreto recuperato è invece sostituito da `<REDACTED_FLAG>`, così come i PID e gli offset di memoria specifici della sessione (che sarebbero comunque diversi a ogni run e non aggiungono valore didattico) sono stati generalizzati in placeholder (`<PID>`, `<offset_heap>`). Nessuna password, flag o hint letterale viene condivisa: chi legge deve rifare il ragionamento e l'estrazione sulla propria istanza del livello.
-
----
-
-## Crediti
-
-Livello e piattaforma: BreachLab (Phantom Track, "Live Injection") — breachlab.org.
+  breachlab.org · phantom track
+```

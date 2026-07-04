@@ -1,55 +1,79 @@
-# Ghost Track - Ghost 8
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   ghost track · phile 0x08 · "something's running"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: ghost-08  "Something's Running"
+   class ...: process inspection · /proc environ
+   tools ...: ps · cat /proc · tr
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Ghost Track
-- Livello: Ghost 8 ("Something's Running")
-- Fonte appunti: `ghost_track/ghost08/notes.md`
+> file cancellati, log puliti, argomenti dei processi rimossi. però
+> `/proc` ricorda quello che la shell dimentica: finché il processo è
+> vivo, il suo ambiente è lì da leggere.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Recuperare la password per l'utente del livello successivo. La consegna del livello indica che un operatore ha "pulito" i file e i log, e ha persino rimosso ogni argomento dai suoi processi — ma `/proc` ricorda quello che la shell dimentica: l'obiettivo è usare il filesystem virtuale `/proc` per recuperare informazioni che non sono più visibili con i metodi standard (history, file di log, argomenti dei processi in `ps`).
+Recuperare la password del livello dopo. Il banner dice che un operatore
+ha ripulito file, log e persino gli argomenti dei suoi processi — quindi
+`ps aux` non basta. La strada è il filesystem virtuale `/proc`.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-La home utente non contiene nulla di utile oltre ai file di configurazione shell standard. L'indizio chiave è nel banner del livello: gli argomenti dei processi sono stati ripuliti, quindi `ps aux` da solo non rivelerà segreti passati come parametri da riga di comando. Esplorando `/proc` a mano (file di sistema come `cmdline`, `keys`, `timer_list`, `interrupts`, la gerarchia `sys/`) non emerge nulla di direttamente utile — sono per lo più file di sistema vuoti o non correlati al livello.
+La home non ha nulla oltre ai dotfile standard. L'indizio è nel banner:
+argomenti dei processi ripuliti, quindi niente segreti da riga di
+comando in `ps`. Frugando `/proc` a mano (`cmdline`, `keys`,
+`timer_list`, la gerarchia `sys/`) non emerge niente di utile. Ma
+enumerando i processi dell'utente compaiono più istanze dello stesso
+demone di livello, lanciate da root e poi declassate all'utente target.
 
-Enumerando i processi dell'utente si individuano più istanze dello stesso demone applicativo del livello, lanciate da root con privilegi elevati e poi declassate all'utente target.
+## ----[ 0x02 · il difetto ]----
 
-## Tecnica
+`/proc/<pid>/environ` espone le variabili d'ambiente con cui un processo
+è partito, a prescindere dal fatto che i suoi argomenti siano stati
+ripuliti. Le variabili sono separate da byte NUL (`\0`), quindi vanno
+convertite con `tr '\0' '\n'` per leggerle. Se un segreto è stato passato
+come env var (pratica comune per tenerlo fuori da `ps aux`, ma non
+sicura), resta visibile qui finché il processo vive — log e history
+cancellati o meno.
 
-La tecnica sfrutta il fatto che `/proc/<pid>/environ` espone le variabili d'ambiente con cui un processo è stato avviato, indipendentemente dal fatto che i suoi argomenti da riga di comando siano stati ripuliti o oscurati. Le variabili in `environ` sono separate da byte NUL (`\0`) anziché da newline, quindi vanno convertite con `tr '\0' '\n'` per essere leggibili. Se un segreto è stato passato al processo come variabile d'ambiente (pratica comune, e comunque non sicura, per evitare che compaia in `ps aux`), resta visibile tramite questo file finché il processo è vivo — anche se i log e la history della shell sono stati cancellati.
+## ----[ 0x03 · exploit ]----
 
-## Sfruttamento
-
-1. Enumerazione dei processi correlati all'utente per identificare i PID del demone di livello:
+1. Enumerazione dei processi dell'utente per trovare i PID del demone:
 
 ```bash
 ps aux | grep <utente>
 ```
 
-Vengono individuate più istanze dello stesso processo, lanciate da root e poi eseguite come l'utente target.
+Più istanze dello stesso processo, lanciate da root ed eseguite come
+l'utente target.
 
-2. Lettura dell'ambiente di ciascun processo tramite `/proc/<pid>/environ`, convertendo i separatori NUL in newline per leggibilità:
+2. Lettura dell'ambiente di ciascun processo, NUL → newline:
 
 ```bash
 cat /proc/<PID>/environ | tr '\0' '\n'
 ```
 
-3. Una delle istanze del processo espone una variabile d'ambiente non standard tra quelle di sistema, contenente il segreto del livello (valore omesso in questa versione pubblica). Questa variabile non fa parte dell'ambiente shell tipico (HOSTNAME, PWD, HOME, SHLVL, PATH, ecc.) ed è stata iniettata specificamente nel processo lanciato da root.
+3. Una delle istanze espone, tra le variabili di sistema, una env var non
+   standard col segreto del livello (valore omesso). Non fa parte
+   dell'ambiente shell tipico (HOSTNAME, PWD, HOME, SHLVL, PATH…): è stata
+   iniettata nel processo lanciato da root.
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-Password/chiave del livello successivo recuperata leggendo l'ambiente di uno dei processi del demone tramite `/proc/<pid>/environ` (valore omesso in questa versione pubblica).
+Password del livello successivo letta dall'ambiente di uno dei processi
+via `/proc/<pid>/environ` (valore omesso). Lezione: un segreto passato
+come variabile d'ambiente non è nascosto — è solo fuori da `ps`, ma resta
+in `/proc`.
 
-## Nota di pubblicazione
+```
+--[ eof ]---------------------------------------------------------------
 
-Questa è la versione pubblicabile su GitHub secondo la dottrina BreachLab: spiega per intero il metodo (enumerazione dei processi e lettura di `/proc/<pid>/environ` per recuperare variabili d'ambiente non visibili tramite `ps`) ma omette il nome esatto della variabile e il suo valore, per non fornire una scorciatoia a chi non ha ancora risolto il livello.
-
----
-
-## Crediti
-
-Livello risolto su BreachLab (https://breachlab.org), Ghost Track. Writeup pubblicato nel rispetto della dottrina "no spoilers" della piattaforma.
+  breachlab.org · ghost track
+```

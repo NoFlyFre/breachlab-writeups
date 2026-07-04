@@ -1,39 +1,31 @@
-# Phantom Track - Phantom 18
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   phantom track · phile 0x12 · "credential spray"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: phantom-18  "Credential Spray"
+   class ...: lateral movement / credential spraying
+   status ..: [ ] not yet owned  ·  wip
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Phantom Track
-- Livello: Phantom 18 ("Credential Spray")
-- Fonte appunti: `phantom_track/phantom18/notes.md`
+> livello non ancora risolto. la cartella tiene il posto; il writeup
+> arriva quando lo chiudo. niente note inventate, niente fuffa.
 
-## Obiettivo
+## ----[ 0x00 · status ]----
 
-Le note per questo livello risultano vuote ("Stato: nessuna nota registrata"). Non è stato annotato né il briefing del livello né alcun comando o output.
+Ancora aperto. Nessuna nota operativa registrata per questo livello, quindi
+qui non c'è recon né exploit da raccontare: aggiungerli senza averlo
+risolto vorrebbe dire inventare, e non si fa.
 
-## Ricognizione
+Il nome del livello ("Credential Spray") suggerisce il tema — lateral movement / credential spraying — ma il metodo
+verrà documentato solo dopo averlo davvero eseguito.
 
-Nessuna ricognizione registrata. Non sono presenti comandi, output di enumerazione, né file letti durante lo svolgimento di questo livello nelle note originali.
+```
+--[ wip ]---------------------------------------------------------------
 
-## Tecnica
-
-Non determinabile dalle note disponibili.
-
-## Sfruttamento
-
-Non applicabile: non esistono passi documentati per questo livello.
-
-## Risultato
-
-Non ci sono evidenze sufficienti nelle note per ricostruire la soluzione di questo livello. Non viene riportata alcuna flag né tecnica, per evitare di pubblicare contenuto non verificato o inventato.
-
-## Nota di pubblicazione
-
-Questa è la versione pensata per la pubblicazione su GitHub, in conformità con la dottrina BreachLab. In assenza di note originali, questo writeup si limita a dichiarare onestamente la mancanza di dati, senza inventare tecniche o risultati.
-
----
-
-## Crediti
-
-Livello e piattaforma: BreachLab (breachlab.org) — Phantom Track.
+  breachlab.org · phantom track · torna più tardi
+```

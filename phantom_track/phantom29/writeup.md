@@ -1,39 +1,31 @@
-# Phantom Track - Phantom 29
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   phantom track · phile 0x1d · "wire tap"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: phantom-29  "Wire Tap"
+   class ...: traffic interception
+   status ..: [ ] not yet owned  ·  wip
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Phantom Track
-- Livello: Phantom 29 ("Wire Tap")
-- Fonte appunti: `phantom_track/phantom29/notes.md`
+> livello non ancora risolto. la cartella tiene il posto; il writeup
+> arriva quando lo chiudo. niente note inventate, niente fuffa.
 
-## Obiettivo
+## ----[ 0x00 · status ]----
 
-Non è disponibile alcuna nota per questo livello (`phantom_track/phantom29/notes.md` risulta senza contenuto registrato). Non è quindi possibile ricostruire con certezza l'obiettivo specifico assegnato dal brief del livello.
+Ancora aperto. Nessuna nota operativa registrata per questo livello, quindi
+qui non c'è recon né exploit da raccontare: aggiungerli senza averlo
+risolto vorrebbe dire inventare, e non si fa.
 
-## Ricognizione
+Il nome del livello ("Wire Tap") suggerisce il tema — traffic interception — ma il metodo
+verrà documentato solo dopo averlo davvero eseguito.
 
-Nessuna evidenza di ricognizione disponibile: non sono stati salvati comandi, output o osservazioni per questo livello.
+```
+--[ wip ]---------------------------------------------------------------
 
-## Tecnica
-
-Non determinabile. In assenza di appunti non è possibile identificare quale vulnerabilità o tecnica sia stata effettivamente sfruttata per completare (o tentare di completare) questo livello.
-
-## Sfruttamento
-
-Nessun passo documentato.
-
-## Risultato
-
-Non ci sono evidenze sufficienti nelle note per ricostruire la soluzione di questo livello. Nessun valore letterale (flag, password o altro) è disponibile — quindi non c'è nulla da redigere: questo writeup resta un placeholder onesto in attesa di appunti reali.
-
-## Nota di pubblicazione
-
-Questa è la versione pensata per la pubblicazione su GitHub secondo la dottrina BreachLab (Writeups · Creators). Non essendoci contenuto tecnico da riportare, questo file segnala semplicemente l'assenza di materiale piuttosto che inventare una soluzione plausibile ma non verificata.
-
----
-
-## Crediti
-
-Livello del track Phantom su BreachLab (https://breachlab.org). Credito al progetto BreachLab per la piattaforma di training.
+  breachlab.org · phantom track · torna più tardi
+```

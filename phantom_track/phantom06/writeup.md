@@ -1,51 +1,82 @@
-# Phantom Track - Phantom 6
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   phantom track · phile 0x06 · "scheduled sins"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: phantom-06  "Scheduled Sins"
+   class ...: privesc / writable cron script
+   tools ...: ls /etc/cron.d · edit script · patience
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Phantom
-- Livello: Phantom 6 ("Scheduled Sins")
-- Fonte appunti: `phantom_track/phantom06/notes.md`
+> ogni minuto gira uno script schedulato, non come root, e — sorpresa — è
+> scrivibile da te. lo modifichi, il cron lo riesegue coi privilegi del
+> suo proprietario, e la flag diventa leggibile.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Il brief ("Scheduled Sins") indica che sulla macchina gira, ogni minuto, qualcosa di schedulato, non eseguito da root. L'obiettivo è identificare cosa sia, chi lo esegue, e se è possibile modificarlo per ottenere la flag, di proprietà dell'utente che possiede il job schedulato. Il brief avverte anche di una particolarità dell'ambiente: `/tmp` è poli-istanziato per sessione SSH, quindi un cron job eseguito in un contesto diverso scriverà nel `/tmp` reale dell'host, non visibile dalla shell interattiva del solutore — un dettaglio operativo cruciale per scegliere dove scrivere l'output.
+Il brief: ogni minuto gira qualcosa di schedulato, non da root. Obiettivo:
+capire cosa, chi lo esegue, e se si può modificarlo per la flag, di
+proprietà dell'utente che possiede il job. Attenzione a un dettaglio:
+`/tmp` è poli-istanziato per sessione SSH, quindi un cron in un contesto
+diverso scrive nel `/tmp` reale dell'host, non visibile dalla tua shell —
+conta dove scrivi l'output.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-L'enumerazione dei job cron di sistema rivela diversi file di configurazione. Oltre a job legittimi di manutenzione, sono presenti job particolari commentati esplicitamente come "sweep" anti-leak, pensati dagli operatori della piattaforma per ripulire periodicamente file lasciati in giro dai solutori. Tra questi job compare la riga chiave: un job che, ogni minuto, esegue uno script di manutenzione come un utente diverso da root — coerentemente con l'indizio del brief.
+L'enumerazione dei cron di sistema rivela vari file. Oltre alla
+manutenzione legittima, ci sono job commentati come "sweep" anti-leak, che
+gli operatori usano per ripulire i file lasciati dai solutori. Tra questi,
+la riga chiave: un job che ogni minuto esegue uno script di manutenzione
+come un utente diverso da root — coerente col brief.
 
-## Tecnica
+## ----[ 0x02 · il difetto ]----
 
-La tecnica sfruttata è l'abuso di un cron job di manutenzione eseguito da un utente diverso da quello del solutore, il cui script risulta scrivibile dall'utente corrente grazie a permessi eccessivamente permissivi (bit setuid attivo, gruppo del solutore con permesso di scrittura). Modificando il contenuto dello script, che viene rieseguito automaticamente dal cron ogni minuto con i privilegi del proprietario originale, è possibile far eseguire comandi arbitrari con quella identità — in questo caso, comandi che rendono leggibile la flag altrimenti protetta, invece di limitarsi al semplice cleanup di file temporanei che lo script svolgeva in origine.
+Abuso di un cron di manutenzione eseguito da un altro utente, il cui
+script è scrivibile dall'utente corrente per permessi troppo larghi (bit
+setuid attivo, gruppo del solutore con write). Modificando lo script — che
+il cron riesegue ogni minuto coi privilegi del proprietario originale — si
+eseguono comandi arbitrari con quella identità: qui, comandi che rendono
+leggibile la flag, invece del semplice cleanup originale.
 
-## Sfruttamento
+## ----[ 0x03 · exploit ]----
 
-1. Lettura del brief e ricognizione dei job pianificati di sistema in `/etc/cron.d/`. Tra le regole presenti spicca un job eseguito ogni minuto da un utente specifico (non root), che richiama uno script di manutenzione.
+1. Brief e ricognizione dei job in `/etc/cron.d/`: spicca un job eseguito
+   ogni minuto da un utente specifico (non root), che richiama uno script
+   di manutenzione.
 
-2. Ispezione dello script eseguito dal cron job: nella sua versione originale si limita a cancellare file temporanei più vecchi di un giorno.
+2. Ispezione dello script: in origine cancella solo file temporanei più
+   vecchi di un giorno.
 
-3. Verifica dei permessi dello script, che risulta scrivibile dal gruppo dell'utente del solutore e con bit setuid attivo — una configurazione dei permessi eccessivamente permissiva rispetto a quanto lo script dovrebbe richiedere.
+3. Verifica dei permessi: scrivibile dal gruppo del solutore e con setuid
+   attivo — troppo permissivo.
 
-4. Modifica esplorativa dello script per verificare che le modifiche vengano effettivamente rieseguite dal cron.
+4. Modifica esplorativa per confermare che il cron riesegue le modifiche.
 
-5. Modifica finale, mirata: aggiunta di un comando che rende leggibile la flag altrimenti protetta, sfruttando il fatto che lo script viene rieseguito periodicamente con i privilegi del proprietario originale del job.
+5. Modifica finale mirata: aggiunta di un comando che rende leggibile la
+   flag, sfruttando la riesecuzione periodica coi privilegi del
+   proprietario.
 
-6. Attesa del prossimo tick del cron (il brief stesso suggerisce pazienza) e verifica ripetuta dei permessi del file target, che passano da inaccessibili a leggibili una volta eseguito lo script modificato.
+6. Attesa del tick del cron (il brief invita alla pazienza) e verifica
+   ripetuta dei permessi del target, che passano da inaccessibili a
+   leggibili.
 
-7. Lettura della flag, ora accessibile in sola lettura.
+7. Lettura della flag.
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-Modificando lo script di manutenzione, eseguito periodicamente dal cron job con i privilegi di un utente diverso grazie a permessi di scrittura troppo permissivi, è stato possibile far eseguire un comando con i privilegi del proprietario del job, rendendo leggibile la flag del livello. Il valore letterale non viene riportato qui: `<REDACTED_FLAG>`. Il livello ha insegnato l'analisi dei job cron di sistema alla ricerca di script eseguiti da un utente diverso ma scrivibili dal solutore — un classico vettore di privilege escalation orizzontale/verticale.
+Script di manutenzione modificato → rieseguito dal cron coi privilegi di
+un altro utente → flag leggibile (valore fuori dal writeup:
+`<REDACTED_FLAG>`). Lezione: un cron che gira come qualcun altro e ha uno
+script scrivibile da te è privesc su un timer.
 
-## Nota di pubblicazione
+```
+--[ eof ]---------------------------------------------------------------
 
-Questo writeup è la versione pubblica (GitHub) delle note personali sul livello Phantom 6 di BreachLab. In conformità alla dottrina BreachLab (Writeups · Creators), il documento insegna il metodo — enumerazione dei cron job di sistema, individuazione di script con permessi eccessivi, e sfruttamento della riesecuzione periodica per eseguire comandi con privilegi altrui — ma non riporta il valore letterale della flag, che il solutore deve ottenere in autonomia ripetendo l'analisi.
-
----
-
-## Crediti
-
-Livello svolto su BreachLab (breachlab.org), Phantom Track. Credit a BreachLab per la piattaforma e il design del livello.
+  breachlab.org · phantom track
+```

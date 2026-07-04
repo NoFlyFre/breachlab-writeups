@@ -1,41 +1,65 @@
-# Ghost Track - Ghost 4
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   ghost track · phile 0x04 · "signal in the noise"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: ghost-04  "Signal in the Noise"
+   class ...: log analysis · needle in a haystack
+   tools ...: cat · grep · pipe
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- **Track:** Ghost Track
-- **Livello:** Ghost 4 → 5 ("Signal in the Noise")
-- **Fonte appunti:** `ghost_track/ghost04/notes.md`
+> 500 file, migliaia di righe di heartbeat tutte identiche. una sola non
+> è come le altre. non si legge a mano: si filtra il rumore finché resta
+> solo il segnale.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-KAEL ha riversato centinaia di voci di log in una directory (`vault/`), tutte con lo stesso formato apparente. Il livello avverte che una sola voce, tra centinaia, "non è come le altre" — ha un formato diverso dal resto del rumore. L'obiettivo è isolare quella voce anomala tra il rumore, senza leggere manualmente centinaia di file, e usarla per ottenere la credenziale del livello successivo.
+KAEL ha riversato centinaia di voci di log in `vault/`, tutte con lo
+stesso formato apparente. Il livello avverte che una sola entry, tra
+centinaia, "non è come le altre". L'obiettivo: isolarla senza leggere a
+mano 500 file, e usarla per la credenziale del livello dopo.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-Nella home di `ghost4` c'è una sola directory rilevante, `vault/`, che contiene circa 500 file (`record_0001` … `record_0500`), quasi tutti da 63 byte, con alcune eccezioni isolate a 48 e 42 byte. Concatenando tutto il contenuto con `cat *` si ottiene un lungo elenco di righe nel formato `[timestamp] STATUS: <hash-like>`, cioè un log di heartbeat sintetico ripetuto migliaia di volte con timestamp e valori esadecimali simil-MD5 casuali — il "rumore" del titolo.
+La home di `ghost4` ha una sola directory utile, `vault/`, con ~500 file
+(`record_0001` … `record_0500`), quasi tutti da 63 byte, con qualche
+eccezione a 48 e 42 byte. Un `cat *` restituisce un lungo elenco nel
+formato `[timestamp] STATUS: <hash-like>`: heartbeat sintetici con
+timestamp e valori esadecimali simil-MD5 casuali. Questo è il "rumore"
+del titolo.
 
-## Tecnica
+## ----[ 0x02 · il difetto ]----
 
-Si tratta di un caso di **needle-in-haystack su log testuali**, dove la tecnica corretta non è la lettura sequenziale ma il filtraggio per pattern con `grep` (o simili) — da cui l'hint del livello verso la documentazione di `grep` e del piping. Analizzando l'output, la stragrande maggioranza delle righe segue rigidamente il formato `[YYYY-MM-DD HH:MM:SS] STATUS: <32 caratteri esadecimali>`. Ci sono due categorie di righe anomale:
+Caso classico di **needle-in-haystack su log testuali**: la tecnica
+giusta non è leggere in sequenza, è filtrare per pattern con `grep` (da
+cui l'hint del livello verso `grep` e il piping). Le righe anomale sono
+di due tipi:
 
-1. Alcune righe `password=<valore>` sparse nel flusso — plausibili ma **distrattori**: sono più di una (più valori diversi osservati), quindi nessuna di esse può essere "la" risposta univoca — la loro stessa molteplicità le squalifica.
-2. Un'unica riga con formato radicalmente diverso, prefissata diversamente dal resto del rumore — questo è il vero segnale, poiché è l'unica entry realmente fuori pattern e presente una sola volta.
+1. Alcune `password=<valore>` sparse nel flusso — sono **distrattori**:
+   ce n'è più d'una, con valori diversi, quindi la loro stessa
+   molteplicità le squalifica come risposta univoca.
+2. Un'unica riga con formato radicalmente diverso, con un prefisso tutto
+   suo. Questo è il vero segnale: fuori pattern e presente una sola volta.
 
-Il modo efficiente per trovarla è un filtro mirato, ad esempio `grep -v "STATUS:"` per escludere il rumore e isolare le righe residue, oppure un pattern negativo mirato, oppure ordinare le righe per lunghezza/formato.
+Per trovarla basta un filtro mirato: `grep -v "STATUS:"` per togliere il
+rumore, un pattern negativo, o un ordinamento per formato.
 
-## Sfruttamento
+## ----[ 0x03 · exploit ]----
 
-1. Enumerazione della home e della directory `vault/`, che rivela circa 500 record di dimensione quasi uniforme (63 byte), con poche eccezioni a 48/42 byte:
+1. Enumerazione di `vault/`: ~500 record quasi uniformi (63 byte), poche
+   eccezioni a 48/42:
 
 ```bash
 ll
-total 68
 ...
 drwx------ 2 ghost4 ghost4 20480 Jun 22 14:07 vault/
 ll
-total 2028
 ...
 -rw-r--r-- 1 ghost4 ghost4    63 Jun 22 14:06 record_0001
 ...
@@ -43,7 +67,7 @@ total 2028
 ...
 ```
 
-2. Concatenazione di tutto il contenuto della vault:
+2. Concatenazione del contenuto:
 
 ```bash
 cat *
@@ -52,20 +76,23 @@ cat *
 ...
 ```
 
-3. Tra le migliaia di righe `STATUS:` compaiono più occorrenze isolate di righe `password=<valore>` (distrattori, valori diversi tra loro e quindi statisticamente scartabili).
+3. Tra le migliaia di `STATUS:` compaiono più `password=<valore>`
+   isolate — distrattori, valori diversi tra loro, statisticamente
+   scartabili.
 
-4. Isolando l'unica riga con formato realmente diverso (né `STATUS:` né `password=`), si trova la credenziale reale, marcata con un prefisso distinto (es. `[CLASSIFIED] CREDENTIAL: ...`), non riportata qui.
+4. Isolando l'unica riga con formato davvero diverso (né `STATUS:` né
+   `password=`) si trova la credenziale reale, marcata con un prefisso
+   distinto (es. `[CLASSIFIED] CREDENTIAL: ...`), non riportata qui.
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-Filtrando il rumore ripetitivo e scartando i distrattori multipli si isola l'unica riga realmente anomala, che contiene la credenziale per l'utente successivo della catena. Il valore non è riportato qui per rispetto della dottrina "no spoilers" di BreachLab.
+Filtrato il rumore ripetitivo e scartati i distrattori multipli, resta
+l'unica riga davvero anomala: la credenziale per l'utente successivo
+(valore fuori dal writeup). La lezione: davanti a grandi volumi di log,
+non leggere — filtra per ciò che *non* combacia col pattern.
 
-## Nota di pubblicazione
+```
+--[ eof ]---------------------------------------------------------------
 
-Questo writeup è la versione pubblicabile su GitHub secondo la dottrina BreachLab (`RULES · OPS DOCTRINE`): insegna il metodo (filtraggio mirato di grandi volumi di log per isolare l'anomalia reale tra rumore e distrattori) senza rivelare la password/flag letterale del livello.
-
----
-
-## Crediti
-
-Livello e sfida a cura di **BreachLab** (https://breachlab.org) — Ghost Track.
+  breachlab.org · ghost track
+```

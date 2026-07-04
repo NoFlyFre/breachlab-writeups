@@ -1,28 +1,51 @@
-# Ghost Track - Ghost 21
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   ghost track · phile 0x15 · "secrets in history"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: ghost-21  "Secrets in History"
+   class ...: git forensics · secret in tag history
+   tools ...: git log · git tag · git show
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Ghost Track
-- Livello: Ghost 21 ("Secrets in History")
-- Fonte appunti: `ghost_track/ghost21/notes.md`
+> `main` è pulito, e questo è il trucco. una release candidate taggata ha
+> ancora la deploy key hardcoded che qualcuno ha tolto "in superficie". la
+> history di git non dimentica.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Il livello ("Secrets in History") consegna un repository git già clonato, il cui branch `main` è pulito. Il brief avverte però che una release candidate taggata contiene ancora una deploy key hardcoded che a suo tempo è stata rimossa dal branch principale. L'obiettivo è recuperare quel secret dalla history del repository.
+Il livello consegna un repo git già clonato, branch `main` pulito. Ma il
+brief avverte: una release candidate taggata contiene ancora una deploy
+key hardcoded, poi rimossa da main. Obiettivo: recuperare quel secret
+dalla history.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-Nella home dell'utente è presente una cartella `repo/` con un repository git funzionante. Il `git log` sul branch `main` mostra solo due commit puliti, nessuno dei quali espone segreti. `git tag` rivela però l'esistenza di un tag di release candidate, non presente come commit raggiungibile dalla history lineare mostrata da `git log` di default.
+Nella home una cartella `repo/` con un repo git funzionante. `git log` su
+`main` mostra solo due commit puliti, nessun segreto. `git tag` rivela
+però un tag di release candidate, non raggiungibile dalla history lineare
+che `git log` mostra di default.
 
-## Tecnica
+## ----[ 0x02 · il difetto ]----
 
-La tecnica sfruttata è l'ispezione della history git al di là del branch corrente: `git log` mostra solo i commit raggiungibili da `HEAD`, ma repository e tag possono conservare commit "orfani" rispetto al branch principale — ad esempio una release candidate che è stata taggata e poi mai mergiata, o il cui commit incriminato è stato rimosso da `main` ma resta comunque raggiungibile tramite il tag. `git show <tag>` permette di ispezionare il commit puntato dal tag, incluso il suo diff completo. In questo caso il commit taggato introduce un file `.env` con una variabile d'ambiente che contiene una deploy key in chiaro — un classico caso di secret hardcoded rimosso "in superficie" (nel branch main successivo) ma ancora recuperabile dalla history immutabile di git. Questo è esattamente il rischio che gli strumenti di secret-scanning su GitHub sono pensati per intercettare.
+Ispezione della history oltre il branch corrente. `git log` mostra solo i
+commit raggiungibili da `HEAD`, ma tag e repo possono conservare commit
+"orfani" rispetto a main — es. una rc taggata e mai mergiata, o il cui
+commit incriminato è stato tolto da main ma resta raggiungibile dal tag.
+`git show <tag>` ne mostra il diff completo. Qui il commit taggato
+introduce un `.env` con una deploy key in chiaro: secret hardcoded rimosso
+in superficie ma ancora nella history immutabile. Esattamente ciò che i
+secret-scanner di GitHub cercano di intercettare.
 
-## Sfruttamento
+## ----[ 0x03 · exploit ]----
 
-1. Enumerazione della home e individuazione del repository:
+1. Enumerazione e repo:
 
 ```bash
 ll
@@ -32,7 +55,7 @@ ll
 drwxr-xr-x 1 ghost21 ghost21 4096 Jun 25 14:16 repo/
 ```
 
-2. Dentro `repo/`, controllo della history sul branch corrente:
+2. History sul branch corrente:
 
 ```bash
 git log
@@ -48,9 +71,9 @@ Author: KAEL <kael@ghost>
     chore: deploy config template + ignore .env
 ```
 
-Nessun secret visibile: main è effettivamente pulito.
+Nessun secret: main è pulito davvero.
 
-3. Verifica dei tag presenti nel repository, spesso trascurati durante un audit superficiale:
+3. Tag presenti, spesso ignorati in un audit superficiale:
 
 ```bash
 git tag
@@ -60,7 +83,7 @@ git tag
 v1.4.0-rc1
 ```
 
-4. Ispezione del commit puntato dal tag, incluso messaggio e diff:
+4. Ispezione del commit puntato dal tag, messaggio e diff:
 
 ```bash
 git show v1.4.0-rc1
@@ -84,18 +107,18 @@ index 0000000..773f8dd
 +DEBUG=true
 ```
 
-Il diff del commit taggato mostra il file `.env` con la deploy key in chiaro, mai rimosso dalla history nonostante non sia più presente su `main`.
+Il diff del tag mostra `.env` con la deploy key in chiaro, mai rimossa
+dalla history nonostante non sia più su main.
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-La deploy key recuperata dalla history del tag di release candidate è la password necessaria per proseguire nel track. Il valore letterale non è riportato qui secondo la dottrina BreachLab; il punto didattico è che i tag e la history git vanno sempre controllati insieme al branch principale durante un audit.
+La deploy key dal tag della release candidate è la password per proseguire
+(valore fuori dal writeup). Lezione: in un audit, tag e history vanno
+guardati sempre insieme al branch principale — cancellare da main non
+cancella dalla storia.
 
-## Nota di pubblicazione
+```
+--[ eof ]---------------------------------------------------------------
 
-Questa è la versione pensata per la pubblicazione su GitHub secondo la dottrina BreachLab (Writeups · Creators): il metodo è spiegato per intero, ma la deploy key è stata sostituita con `<REDACTED>` per non fornire scorciatoie a chi non ha ancora risolto il livello.
-
----
-
-## Crediti
-
-Livello risolto su BreachLab (https://breachlab.org), Ghost Track. Credito al progetto BreachLab per la piattaforma di training.
+  breachlab.org · ghost track
+```

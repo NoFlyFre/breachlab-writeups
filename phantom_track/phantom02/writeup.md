@@ -1,46 +1,70 @@
-# Phantom Track - Phantom 2
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   phantom track · phile 0x02 · "sudo games"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: phantom-02  "Sudo Games"
+   class ...: privesc / sudoers RunAs non-root
+   tools ...: sudo -l · vim
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Phantom Track
-- Livello: Phantom 2 ("Sudo Games")
-- Fonte appunti: `phantom_track/phantom02/notes.md`
+> hai sudo, ma non su root. il trucco è leggere davvero l'output di
+> `sudo -l`: quel `(utente)` tra parentesi è il RunAs, e con un editor
+> concesso apri qualunque file che lui può leggere.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Il BRIEFING del livello indica che l'utente `phantom2` ha diritti sudo limitati, non su tutto e non su root. L'obiettivo è enumerare esattamente cosa può eseguire e **come quale utente**, poi usare quel privilegio per leggere un file protetto posseduto da un altro utente di sistema, individuabile tramite l'enumerazione dei permessi su una directory dedicata alle flag.
+Il brief: `phantom2` ha diritti sudo limitati, non su tutto e non su
+root. Obiettivo: enumerare cosa può eseguire e **come quale utente**, poi
+usare quel privilegio per leggere un file protetto di un altro utente,
+individuabile enumerando i permessi della directory delle flag.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-La home di `phantom2` contiene solo un file `BRIEFING` con la missione. Il comando `sudo -l` rivela il privilegio concesso: un binario eseguibile senza password, ma **non come root** — con un `RunAs` verso un altro utente di sistema.
+La home di `phantom2` ha solo `BRIEFING`. `sudo -l` rivela il privilegio:
+un binario eseguibile senza password, ma **non come root** — con un
+`RunAs` verso un altro utente.
 
-L'enumerazione della directory delle flag mostra una serie di file, ciascuno posseduto da un diverso "flagkeeper" per ogni livello, tutti con permessi restrittivi (leggibili solo dal rispettivo proprietario). L'utente corrente non può leggere direttamente il file target (`Permission denied`), ma può eseguire il binario concesso proprio come l'utente proprietario del file.
+La directory delle flag mostra un file per ogni "flagkeeper", tutti
+leggibili solo dal proprietario. L'utente corrente non può leggere il
+target (`Permission denied`), ma può eseguire il binario concesso proprio
+come il proprietario del file.
 
-## Tecnica
+## ----[ 0x02 · il difetto ]----
 
-La tecnica è lo **sfruttamento di una regola sudoers con `RunAs` non-root**. Molti pensano a `sudo` solo come "esegui come root", ma la sintassi sudoers permette di specificare un `RunAs` arbitrario (`(utente) comando`). Se il binario concesso è un editor di testo, senza restrizioni sull'argomento nella entry sudoers, l'utente può aprire **qualunque file leggibile dall'utente target** — inclusi quelli che l'utente originale non potrebbe mai leggere direttamente.
-
-Il punto chiave è che l'entry sudoers concede l'esecuzione del binario senza argomenti fissi, quindi il comando può essere invocato specificando come argomento il file che si vuole leggere:
+Sfruttamento di una regola sudoers con **RunAs non-root**. In molti
+pensano a `sudo` solo come "esegui come root", ma la sintassi permette un
+RunAs arbitrario (`(utente) comando`). Se il binario concesso è un editor
+di testo, senza restrizioni sull'argomento nella entry, si può aprire
+**qualunque file leggibile dall'utente target**:
 
 ```
 sudo -u <utente_target> /usr/bin/vim <file>
 ```
 
-Questo apre il file con i permessi effettivi dell'utente target (il proprietario del file), bypassando la protezione che impediva la lettura diretta. Diversi tentativi alternativi (assumere che il target fosse root, tentare `su` verso un utente inesistente) falliscono perché non corrispondono esattamente al privilegio concesso da sudoers — la lezione tecnica è leggere con precisione l'output di `sudo -l`, incluso il campo `RunAs` tra parentesi, prima di agire.
+Il file si apre coi permessi effettivi del target, bypassando la
+protezione. Vari tentativi alternativi (assumere root, `su` verso utente
+inesistente) falliscono perché non combaciano col privilegio concesso —
+la lezione è leggere con precisione `sudo -l`, campo `RunAs` incluso,
+prima di agire.
 
-## Sfruttamento
+## ----[ 0x03 · exploit ]----
 
-1. Enumerazione del privilegio sudo concesso:
+1. Privilegio sudo concesso:
 
 ```bash
 sudo -l
 ```
 
-Il target di esecuzione del binario concesso non è root, ma un utente specifico indicato tra parentesi nell'output.
+Il target non è root, è un utente specifico tra parentesi.
 
-2. Individuazione del file target sfruttando l'indizio nel briefing del livello (il proprietario del file è l'utente verso cui si può fare pivot):
+2. File target (il proprietario è l'utente verso cui fare pivot):
 
 ```bash
 cd /var/lib/phantom-flags
@@ -48,9 +72,7 @@ cat level2_flag
 cat: level2_flag: Permission denied
 ```
 
-Conferma diretta che l'utente corrente non ha i permessi di lettura sul file.
-
-3. Tentativi falliti che aiutano a capire i limiti esatti della regola sudoers:
+3. Tentativi falliti che chiariscono i limiti della regola:
 
 ```bash
 sudo vim level2_flag
@@ -63,26 +85,25 @@ sudo -u phantom /usr/bin/vim level2_flag
 sudo: unknown user phantom
 ```
 
-Questi tentativi confermano che, senza specificare correttamente l'utente target consentito dalla regola sudoers, sudo rifiuta l'esecuzione perché il default implicito è root, non concesso dalla regola.
+Senza specificare l'utente giusto, sudo assume root (non concesso) e
+rifiuta.
 
-4. Esecuzione corretta specificando l'utente target consentito dalla regola sudoers:
+4. Esecuzione corretta col target consentito:
 
 ```bash
 sudo -u <REDACTED> /usr/bin/vim level2_flag
 ```
 
-Il file si apre con i permessi dell'utente proprietario, rendendone visibile il contenuto.
+Il file si apre coi permessi del proprietario.
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-L'apertura del file protetto con i privilegi dell'utente indicato nella regola sudoers (`RunAs`) permette di bypassare la protezione a livello di permessi Unix, esponendo il contenuto della flag del livello. Il valore letterale non è incluso in questo writeup.
+Aprire il file coi privilegi dell'utente del RunAs bypassa i permessi
+Unix ed espone la flag (valore fuori dal writeup). Lezione: `sudo -l` va
+letto fino all'ultima parentesi — il RunAs è metà dell'exploit.
 
-## Nota di pubblicazione
+```
+--[ eof ]---------------------------------------------------------------
 
-Questa è la versione pubblicabile su GitHub secondo la dottrina BreachLab: spiega per intero il metodo (lettura attenta di `sudo -l`, comprensione del campo `RunAs` non-root, uso di un editor concesso per leggere file altrui), ma non riporta la flag risolutiva, in modo da preservare la sfida per gli altri operatori.
-
----
-
-## Crediti
-
-Livello risolto su BreachLab (https://breachlab.org), Phantom Track — piattaforma di training autorizzato per pentest/CTF. Rispetta le Standing Orders: nessuno spoiler di password o flag letterali.
+  breachlab.org · phantom track
+```

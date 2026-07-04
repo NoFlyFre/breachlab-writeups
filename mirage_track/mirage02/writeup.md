@@ -1,31 +1,56 @@
-# Mirage Track - Mirage 2
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   mirage track · phile 0x02 · "peel the encoding"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: mirage-02  "Peel the Encoding"
+   class ...: web · layered encoding · API contract
+   tools ...: devtools · fetch() · base64 · hex
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Mirage Track
-- Livello: Mirage 2 ("Peel the Encoding")
-- Fonte appunti: `mirage_track/mirage02/notes.md`
+> un "codice di verifica" avvolto due volte — base64 sopra hex — e una
+> API che accetta solo JSON. sbucci gli strati, rispetti il contratto, e
+> l'ambiente successivo si apre.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Il livello presenta "Nimbus AI — verify your workspace", una pagina che mostra un "codice di verifica" e afferma che il flusso di onboarding lo decodifica e conferma automaticamente lo sblocco. L'obiettivo è completare manualmente questo sblocco (endpoint `/unlock`) per ottenere l'accesso all'ambiente successivo del track.
+"Nimbus AI — verify your workspace": la pagina mostra un codice di
+verifica e dice che l'onboarding lo decodifica e sblocca da solo.
+Obiettivo: completare a mano lo sblocco (endpoint `/unlock`) per accedere
+all'ambiente successivo.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-La pagina mostra un codice apparentemente casuale e un suggerimento nel testo visibile: "Stuck? The code is wrapped for transport. Peel the layers, then have the API verify the decoded token. (Engineers: see page source.)". Il vero indizio tecnico però è nel sorgente HTML, in un commento sviluppatore lasciato nel codice: spiega che il codice è "double-wrapped for transport — base64 over a hex layer" (cioè hex, poi il tutto codificato in base64), che va decodificato lato client prima dell'invio, e che l'endpoint `POST /unlock` accetta esclusivamente un body JSON con struttura `{ token: decodedCode }`. Il commento specifica anche che una richiesta form-urlencoded viene rifiutata con 415, perché l'API è JSON-only.
+La pagina mostra un codice apparentemente casuale e un hint visibile:
+"the code is wrapped for transport. Peel the layers…". Ma l'indizio vero è
+in un commento sviluppatore nel sorgente HTML: il codice è "double-wrapped
+for transport — base64 over a hex layer" (hex, poi base64), da decodificare
+client-side, e l'endpoint `POST /unlock` accetta solo un body JSON
+`{ token: decodedCode }`. Il commento nota anche che una form-urlencoded
+viene rifiutata con 415: API JSON-only.
 
-## Tecnica
+## ----[ 0x02 · il difetto ]----
 
-Non è uno sfruttamento di una falla applicativa in senso stretto, ma lo sfruttamento di informazioni di debug/sviluppo lasciate nel sorgente pubblico (commento HTML) che spiegano esattamente formato e trasformazioni richieste da un endpoint altrimenti opaco. La tecnica si articola in due parti:
+Non è una falla applicativa in senso stretto, ma lo sfruttamento di info
+di debug lasciate nel sorgente pubblico, che spiegano formato e
+trasformazioni di un endpoint altrimenti opaco. Due parti:
 
-1. **Decodifica a strati**: il "codice di verifica" mostrato in pagina è una stringa base64 che, decodificata, produce a sua volta una stringa esadecimale; decodificando quest'ultima da hex a testo si ottiene il token reale in chiaro.
-2. **Rispetto del contratto API**: l'endpoint `/unlock` richiede specificamente una richiesta `POST` con header `Content-Type: application/json` e body `{"token": "<valore>"}` — qualunque altro formato (es. form POST) viene respinto con HTTP 415. Il primo tentativo, inviando il codice ancora codificato, restituisce infatti 401 con un messaggio di errore che conferma esplicitamente la sequenza di decodifica richiesta (base64 → hex → plaintext), confermando l'ipotesi ricavata dal commento.
+1. **decodifica a strati** — il codice mostrato è base64; decodificato dà
+   una stringa hex; da hex a testo si ottiene il token reale.
+2. **rispetto del contratto API** — `/unlock` vuole `POST` con
+   `Content-Type: application/json` e body `{"token": "<valore>"}`; altri
+   formati → 415. Il primo tentativo col codice ancora codificato dà 401,
+   con un errore che conferma la sequenza base64 → hex → plaintext.
 
-## Sfruttamento
+## ----[ 0x03 · exploit ]----
 
-1. Lettura del commento sviluppatore nel sorgente HTML della pagina, che rivela formato dell'endpoint e trasformazioni necessarie:
+1. Il commento nel sorgente HTML:
 
 ```html
 <!--
@@ -43,7 +68,7 @@ Non è uno sfruttamento di una falla applicativa in senso stretto, ma lo sfrutta
 -->
 ```
 
-2. Primo tentativo, inviando il codice così com'è mostrato in pagina (ancora codificato), per verificare il comportamento dell'endpoint dalla console del browser:
+2. Primo tentativo col codice ancora codificato, dalla console:
 
 ```javascript
 fetch("/unlock", {method: "POST",
@@ -52,17 +77,16 @@ fetch("/unlock", {method: "POST",
         })
 ```
 
-Risposta:
-
 ```text
 401 Unauthorized — token does not match. Peel the verification code (base64 -> hex -> plaintext) and submit the decoded value.
 ```
 
-Il messaggio d'errore conferma esplicitamente i due strati di codifica da rimuovere.
+L'errore conferma i due strati da togliere.
 
-3. Decodifica manuale del codice: prima da base64 a stringa esadecimale, poi da esadecimale a testo semplice. Il risultato è il token reale (valore non riportato qui).
+3. Decodifica manuale: base64 → stringa hex → testo. Risultato: il token
+   reale (valore fuori dal writeup).
 
-4. Nuova richiesta `fetch` verso `/unlock`, questa volta con il token decodificato:
+4. Nuova `fetch` verso `/unlock` col token decodificato:
 
 ```javascript
 fetch("/unlock", {method: "POST",
@@ -71,7 +95,7 @@ fetch("/unlock", {method: "POST",
         })
 ```
 
-5. Risposta positiva, con lo stato "activated" e i dettagli di accesso all'ambiente successivo:
+5. Risposta positiva, con i dettagli dell'ambiente successivo:
 
 ```json
 {
@@ -85,18 +109,19 @@ fetch("/unlock", {method: "POST",
 }
 ```
 
-La risposta include anche un blocco `observed_activity` che segnala i tentativi POST rifiutati registrati durante l'esplorazione — un promemoria che anche i tentativi falliti vengono loggati e possono alzare lo score di attività sospetta.
+C'è anche un blocco `observed_activity` che segnala i POST rifiutati: anche
+i tentativi falliti vengono loggati.
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-Token di sblocco decodificato correttamente (base64 → hex → plaintext) e inviato all'endpoint `/unlock`, ottenendo l'accesso HTTP Basic per l'ambiente successivo. Il valore letterale del token e della chiave non sono riportati qui secondo la dottrina BreachLab; il punto didattico è imparare a leggere i commenti degli sviluppatori nel sorgente e a rispettare rigorosamente il contratto di un'API (metodo, header, formato del body) prima di dedurne il comportamento da errori generici.
+Token sbucciato (base64 → hex → plaintext) e inviato a `/unlock`: accesso
+HTTP Basic per l'ambiente dopo (valori fuori dal writeup). Lezione: leggi
+i commenti degli sviluppatori e rispetta alla lettera il contratto di una
+API — metodo, header, formato del body — prima di dedurre dal 500 di
+turno.
 
-## Nota di pubblicazione
+```
+--[ eof ]---------------------------------------------------------------
 
-Questa è la versione pensata per la pubblicazione su GitHub secondo la dottrina BreachLab (Writeups · Creators): il metodo è spiegato per intero, ma il codice di verifica, il token decodificato e la chiave finale sono stati sostituiti con placeholder per non fornire scorciatoie a chi non ha ancora risolto il livello.
-
----
-
-## Crediti
-
-Livello risolto su BreachLab (https://breachlab.org), Mirage Track. Credito al progetto BreachLab per la piattaforma di training.
+  breachlab.org · mirage track
+```

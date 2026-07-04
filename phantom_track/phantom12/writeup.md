@@ -1,58 +1,90 @@
-# Phantom Track - Phantom 12
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   phantom track · phile 0x0c · "ghost install"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: phantom-12  "Ghost Install"
+   class ...: persistence · user-level (no root)
+   tools ...: ssh-keygen · crontab · systemd --user · bashrc
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Phantom
-- Livello: Phantom 12 ("Ghost Install")
-- Fonte appunti: `phantom_track/phantom12/notes.md`
+> niente root: si pianta persistenza a livello utente su quattro superfici
+> diverse, ciascuna capace di sopravvivere a reboot e logout. quattro modi
+> di restare, tutti sotto il radar del rilevamento root.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Il brief ("Ghost Install") chiede di installare, senza privilegi sudo/root, quattro meccanismi di persistenza indipendenti a livello utente nella propria home directory, ciascuno in grado di sopravvivere sia a un reboot che a un logout. Ogni artefatto piantato deve contenere una stringa marker specifica da qualche parte nel proprio corpo, per permettere allo script di verifica di distinguere i file piantati dall'operatore da quelli di default della distribuzione. Le superfici suggerite dal brief sono: SSH `authorized_keys`, crontab utente, unit systemd in modalità utente, file di shell rc, e uno shim binario via PATH.
+Il brief chiede di installare, senza sudo/root, quattro meccanismi di
+persistenza utente indipendenti nella home, ognuno capace di sopravvivere
+a reboot e logout. Ogni artefatto deve contenere una stringa marker, così
+lo script di verifica distingue i file piantati da quelli di default.
+Superfici suggerite: SSH `authorized_keys`, crontab utente, unit systemd
+user, shell rc, e uno shim binario via PATH.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-Il livello simula lo scenario post-exploitation in cui un operatore ha già accesso a una shell utente (senza root) e deve garantirsi persistenza a lungo termine restando sotto il radar del rilevamento a livello root. Le superfici indicate corrispondono a meccanismi reali usati dagli avversari: chiave SSH aggiuntiva autorizzata, job schedulato via cron, unit systemd in modalità utente, e hijack dei file di inizializzazione della shell. Uno script di verifica fornito dal livello controlla la presenza del marker in ciascuna delle superfici e assegna un punteggio parziale.
+Scenario post-exploitation: shell utente (senza root) e persistenza a
+lungo termine restando sotto il radar del rilevamento root. Le superfici
+sono meccanismi reali usati dagli avversari: chiave SSH aggiuntiva, cron,
+unit systemd user, hijack dei file di init della shell. Uno script di
+verifica del livello controlla il marker su ciascuna superficie e assegna
+un punteggio parziale.
 
-## Tecnica
+## ----[ 0x02 · il difetto ]----
 
-La tecnica è l'installazione di quattro meccanismi di persistenza user-level distinti, tutti realizzabili senza privilegi elevati:
+Quattro meccanismi user-level, tutti senza privilegi elevati:
 
-1. **SSH backdoor utente**: aggiunta di una chiave pubblica generata ad-hoc in `~/.ssh/authorized_keys`, usando il commento della chiave (opzione `-C` di `ssh-keygen`) come veicolo per il marker richiesto.
-2. **Cron job utente**: un task pianificato (`crontab -e`) che, a intervalli regolari, stampa il marker ed esegue una reverse shell verso un host/porta configurabili.
-3. **Unit systemd utente**: un file `.service` sotto `~/.config/systemd/user/` con il marker nel campo `Description` e un `ExecStart` che apre una shell su una connessione TCP tramite file descriptor Bash (`/dev/tcp/...`), con riavvio automatico.
-4. **Shell rc hijack**: una riga aggiunta a `.bashrc`, preceduta da un commento con il marker, che esegue lo stesso trucco della reverse shell via file descriptor ogni volta che si apre una shell interattiva.
+1. **SSH backdoor** — chiave pubblica ad-hoc in `~/.ssh/authorized_keys`,
+   col marker nel commento della chiave (`ssh-keygen -C`).
+2. **cron utente** — task via `crontab -e` che stampa il marker ed esegue
+   una reverse shell a intervalli.
+3. **unit systemd user** — `.service` in `~/.config/systemd/user/`, marker
+   nel `Description`, `ExecStart` con shell su TCP via file descriptor Bash
+   (`/dev/tcp/...`) e riavvio automatico.
+4. **shell rc hijack** — riga in `.bashrc`, preceduta da un commento col
+   marker, con lo stesso trucco reverse shell a ogni shell interattiva.
 
-Ogni meccanismo viene validato incrementalmente rieseguendo lo script di verifica fornito dal livello, che riporta un punteggio parziale e indica esplicitamente quale meccanismo manca ancora.
+Ogni meccanismo si valida in modo incrementale rieseguendo lo script di
+verifica, che dà punteggio parziale e indica cosa manca.
 
-## Sfruttamento
+## ----[ 0x03 · exploit ]----
 
-1. Lettura del brief per capire i requisiti esatti: quattro superfici indipendenti, marker testuale obbligatorio in ciascun artefatto, verifica tramite script fornito dal livello.
+1. Brief: quattro superfici indipendenti, marker obbligatorio, verifica
+   via script.
 
-2. Generazione di una coppia di chiavi ed25519 dedicata, con il marker richiesto inserito come commento della chiave, e installazione della chiave pubblica in `authorized_keys`. Il commento della chiave, che finisce alla fine della riga della chiave pubblica in formato OpenSSH, soddisfa il requisito del marker senza bisogno di modificare altrimenti il formato del file.
+2. Coppia ed25519 dedicata col marker come commento, pubblica in
+   `authorized_keys` (il commento a fine riga soddisfa il marker senza
+   toccare il formato).
 
-3. Installazione di un cron job utente che stampa il marker ed esegue una reverse shell a intervalli regolari, tramite `crontab -e`.
+3. Cron utente che stampa il marker + reverse shell, via `crontab -e`.
 
-4. Prima verifica dopo aver installato solo due dei quattro meccanismi, che mostra un punteggio parziale e indica esplicitamente quali meccanismi mancano ancora — il verificatore fornisce feedback granulare per ogni superficie.
+4. Prima verifica con due meccanismi su quattro: punteggio parziale, il
+   verificatore indica cosa manca.
 
-5. Creazione di una unit systemd utente sotto `~/.config/systemd/user/`, con il marker nel campo `Description` e un `ExecStart` che apre una reverse shell tramite file descriptor TCP di bash, con parametri di riavvio automatico. Il punteggio sale al 75%.
+5. Unit systemd user in `~/.config/systemd/user/`, marker nel
+   `Description`, `ExecStart` con reverse shell via file descriptor TCP e
+   riavvio automatico. Punteggio al 75%.
 
-6. Aggiunta al file di shell rc di una riga con marker e reverse shell, eseguita a ogni apertura di shell interattiva.
+6. Riga nel shell rc con marker + reverse shell, a ogni shell interattiva.
 
-7. Verifica finale: tutti e quattro i meccanismi risultano installati, punteggio massimo, e lo script rilascia la flag del livello.
+7. Verifica finale: tutti e quattro installati, punteggio massimo, lo
+   script rilascia la flag.
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-Con tutti e quattro i meccanismi di persistenza user-level installati e verificati, il livello rilascia la flag del livello, da usare come password per l'account del livello successivo. Il valore letterale non viene riportato qui: `<REDACTED_FLAG>`. Il livello ha insegnato tecniche reali di persistenza post-exploitation a livello utente (SSH, cron, systemd user, shell rc) senza necessità di privilegi di root.
+Quattro meccanismi user-level (SSH, cron, systemd user, shell rc)
+installati e verificati → la flag, password per il livello dopo:
+`<REDACTED_FLAG>`. Lezione: la persistenza non ha bisogno di root — ha
+bisogno solo di superfici che nessuno controlla.
 
-## Nota di pubblicazione
+```
+--[ eof ]---------------------------------------------------------------
 
-Questo writeup è la versione pubblica (GitHub) delle note personali sul livello Phantom 12 di BreachLab. In conformità alla dottrina BreachLab (Writeups · Creators), il documento insegna il metodo — quattro tecniche distinte di persistenza user-level e come validarle incrementalmente — ma non riporta la flag/password finale né dettagli superflui identificativi dell'ambiente personale del solutore, che deve ripetere l'esercizio in autonomia sul proprio ambiente.
-
----
-
-## Crediti
-
-Livello svolto su BreachLab (breachlab.org), Phantom Track. Credit a BreachLab per la piattaforma e il design del livello.
+  breachlab.org · phantom track
+```

@@ -1,54 +1,79 @@
-# Ghost Track - Ghost 20
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   ghost track · phile 0x14 · "cron discovery"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: ghost-20  "Cron Discovery"
+   class ...: cron abuse · TOCTOU race condition
+   tools ...: ls · cat · loop di lettura
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Ghost Track
-- Livello: Ghost 20 ("Cron Discovery")
-- Fonte appunti: `ghost_track/ghost20/notes.md`
+> qualcosa gira come root ogni minuto, scrive un segreto in un file
+> world-readable e lo cancella dopo due secondi. quella finestra è tutto
+> ciò che ti serve.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Il livello indica che "qualcosa" viene eseguito periodicamente come root e chiede di scoprire cosa, dove scrive e cosa legge, suggerendo di cercare nei "corners" di `/etc` dedicati ai job pianificati (cron). L'obiettivo è identificare il job cron root rilevante, capire il suo comportamento e usarlo per ottenere la credenziale per il livello successivo.
+Il livello dice che "qualcosa" viene eseguito periodicamente come root e
+chiede di scoprire cosa, dove scrive e cosa legge, suggerendo di guardare
+negli angoli di `/etc` dedicati ai job pianificati. Obiettivo:
+identificare il cron root giusto, capirlo e usarlo per la credenziale del
+livello dopo.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-L'elenco di `/etc/cron.d/` mostra, oltre ai job di sistema standard (`e2scrub_all`), due file non standard con timestamp recente. Il contenuto combinato di `/etc/cron.d/*` rivela due entry cron che girano **ogni minuto** come root, puntando a due script personalizzati in `/opt/`. Il primo di questi (`job.sh`) è il target di interesse: viene letto per capire cosa fa.
+`/etc/cron.d/` mostra, oltre ai job standard (`e2scrub_all`), due file non
+standard con timestamp recente. Il contenuto combinato rivela due entry
+che girano **ogni minuto** come root, verso due script in `/opt/`. Il
+primo (`job.sh`) è il target: lo si legge per capire cosa fa.
 
-## Tecnica
+## ----[ 0x02 · il difetto ]----
 
-La tecnica sfruttata è una **race condition su un file temporaneo scritto da un cron job root** (pattern TOCTOU — time-of-check to time-of-use). Lo schema generale di questo tipo di script è:
+**Race condition su file temporaneo scritto da un cron root** (pattern
+TOCTOU). Schema tipico:
 
-1. Un job root copia un contenuto protetto (leggibile solo da root) in un file temporaneo con permessi più permissivi (es. in `/var/tmp`, world-readable).
-2. Attende un breve intervallo di tempo prima di cancellarlo.
-3. Cancella il file temporaneo.
+1. Un job root copia un contenuto protetto (root-only) in un file
+   temporaneo con permessi più larghi (es. `/var/tmp`, world-readable).
+2. Aspetta un attimo prima di cancellarlo.
+3. Cancella.
 
-Il punto debole è la finestra temporale tra la scrittura del contenuto protetto nel file temporaneo e la sua cancellazione: durante quella finestra, qualunque utente locale con permessi di lettura sulla directory temporanea può leggere un contenuto che altrimenti sarebbe inaccessibile. Poiché il job cron gira ogni minuto, la finestra si ripresenta periodicamente, rendendo lo sfruttamento affidabile anche senza timing millimetrico: basta monitorare il file target in un loop di lettura stretto.
+Il punto debole è la finestra tra scrittura e cancellazione: in
+quell'istante qualunque utente locale con lettura sulla directory può
+leggere un contenuto altrimenti inaccessibile. E siccome il job gira ogni
+minuto, la finestra si ripresenta di continuo: niente timing
+millimetrico, basta un loop di lettura stretto.
 
-## Sfruttamento
+## ----[ 0x03 · exploit ]----
 
-1. Enumerazione dei job pianificati per identificare cosa gira come root:
+1. Enumerazione dei job pianificati:
 
 ```bash
 ls -la /etc/cron.d/
 ```
 
-Si notano entry non standard con timestamp recente rispetto ai job di sistema.
+Entry non standard con timestamp recente rispetto ai job di sistema.
 
-2. Lettura del contenuto delle crontab per capire cosa viene eseguito e con quale frequenza:
+2. Contenuto delle crontab, per capire cosa e con che frequenza:
 
 ```bash
 cat /etc/cron.d/*
 ```
 
-Emergono job custom pianificati con cadenza `* * * * *` (ogni minuto) eseguiti come root — condizione ideale per una race condition, perché l'esecuzione si ripete costantemente.
+Job custom con cadenza `* * * * *` (ogni minuto) come root — condizione
+ideale per una race.
 
-3. Lettura dello script per capire il flusso dati (dove scrive, cosa legge, quanto dura la finestra):
+3. Lettura dello script per il flusso dati:
 
 ```bash
 cat /opt/ghost-cron/job.sh
 ```
+
 ```bash
 #!/bin/bash
 cat <REDACTED> > /var/tmp/ghost-cron-output 2>/dev/null
@@ -57,20 +82,21 @@ rm -f /var/tmp/ghost-cron-output
 while true; do cat /var/tmp/ghost-cron-output 2>/dev/null && break; sleep 1; done
 ```
 
-Emerge chiaramente una finestra temporale in cui un file world-readable in `/var/tmp` contiene un secret altrimenti non accessibile, prima di essere cancellato.
+C'è una finestra in cui un file world-readable in `/var/tmp` contiene un
+secret altrimenti inaccessibile, prima della cancellazione.
 
-4. Sfruttando la periodicità del job (ogni minuto), è sufficiente leggere in loop il file temporaneo per catturarne il contenuto prima della cancellazione.
+4. Sfruttando la periodicità (ogni minuto), basta leggere in loop il file
+   temporaneo per catturarne il contenuto prima del `rm`.
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-Sfruttando la finestra temporale creata dal cron job root tra scrittura e cancellazione del file temporaneo, è stato possibile leggere il secret prima della sua rimozione, ottenendo la credenziale per il livello successivo. Il valore letterale non è incluso in questo writeup.
+Sfruttata la finestra tra scrittura e cancellazione, si legge il secret
+prima che sparisca: credenziale per il livello dopo (valore fuori dal
+writeup). Lezione: un cron root che scrive in `/var/tmp` e "dorme" è un
+TOCTOU servito su un piatto.
 
-## Nota di pubblicazione
+```
+--[ eof ]---------------------------------------------------------------
 
-Questa è la versione pubblicabile su GitHub secondo la dottrina BreachLab: spiega per intero il metodo (identificazione di job cron custom, analisi dello script e sfruttamento della race condition TOCTOU su file temporanei), ma non riporta il secret/password risolutivo, in modo da preservare la sfida per gli altri operatori.
-
----
-
-## Crediti
-
-Livello risolto su BreachLab (https://breachlab.org), Ghost Track — piattaforma di training autorizzato per pentest/CTF. Rispetta le Standing Orders: nessuno spoiler di password o flag letterali.
+  breachlab.org · ghost track
+```

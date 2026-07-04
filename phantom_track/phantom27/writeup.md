@@ -1,34 +1,31 @@
-# Phantom Track - Phantom 27
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   phantom track · phile 0x1b · "toolsmith"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: phantom-27  "Toolsmith"
+   class ...: tooling / operations
+   status ..: [ ] not yet owned  ·  wip
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Phantom Track
-- Livello: Phantom 27 ("Toolsmith")
-- Fonte appunti: `phantom_track/phantom27/notes.md`
+> livello non ancora risolto. la cartella tiene il posto; il writeup
+> arriva quando lo chiudo. niente note inventate, niente fuffa.
 
-## Obiettivo
+## ----[ 0x00 · status ]----
 
-Nessuna procedura registrata in questa nota.
+Ancora aperto. Nessuna nota operativa registrata per questo livello, quindi
+qui non c'è recon né exploit da raccontare: aggiungerli senza averlo
+risolto vorrebbe dire inventare, e non si fa.
 
-## Tecniche usate
+Il nome del livello ("Toolsmith") suggerisce il tema — tooling / operations — ma il metodo
+verrà documentato solo dopo averlo davvero eseguito.
 
-- Nessuna tecnica annotata.
+```
+--[ wip ]---------------------------------------------------------------
 
-## Nota di pubblicazione
-
-Questa versione e' pensata per GitHub e segue la dottrina BreachLab: spiega il metodo, ma rimuove password, flag, token, chiavi, hash crackabili e valori che permetterebbero di saltare il ragionamento.
-
-## Procedura
-
-_Nessuna nota registrata per questo livello._
-## Conclusione operativa
-
-Non ci sono evidenze sufficienti per ricostruire una soluzione completa.
-
----
-
-## Crediti
-
-Lab: BreachLab. Pubblicare sempre con credito al progetto e senza spoiler risolutivi.
+  breachlab.org · phantom track · torna più tardi
+```

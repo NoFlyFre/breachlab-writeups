@@ -1,36 +1,54 @@
-# Ghost Track - Ghost 19
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   ghost track · phile 0x13 · "your first script"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: ghost-19  "Your First Script"
+   class ...: scripting · TCP service · loop assembly
+   tools ...: nc · for · seq
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Ghost Track
-- Livello: Ghost 19 ("Your First Script")
-- Fonte appunti: `ghost_track/ghost19/notes.md`
+> il segreto arriva a pezzi, uno per indice, da un servizio TCP.
+> raccoglierli a mano è da masochisti: si scrive il loop.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Recuperare la password per l'utente del livello successivo. Un servizio in ascolto su una porta TCP locale restituisce la password del livello successivo un pezzo alla volta, indicizzato per posizione. La consegna avverte esplicitamente di non recuperare i pezzi a mano, ma di scrivere un ciclo che li raccolga e li riassembli in ordine.
+Recuperare la password del livello dopo. Un servizio su porta TCP locale
+la restituisce un pezzo alla volta, indicizzato per posizione. Il brief
+avverte di non raccogliere i pezzi a mano, ma di scrivere un ciclo che li
+prenda e li rimetta insieme in ordine.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-Nella home utente è presente un file di piccole dimensioni, leggibile solo dal proprietario, che lascia intuire che il segreto finale sia corto. Il vero canale di consegna è però un servizio TCP locale: inviandogli una richiesta apposita è possibile chiedere quanti "pezzi" compongono il segreto, e poi richiederli singolarmente per indice.
+Nella home un file piccolo, leggibile solo dal proprietario, che fa
+intuire un segreto corto. Il vero canale è però un servizio TCP locale:
+gli si chiede quanti "pezzi" compongono il segreto, poi li si richiede
+uno per uno per indice.
 
-## Tecnica
+## ----[ 0x02 · il difetto ]----
 
-Il servizio implementa una API testuale molto semplice su netcat: un comando speciale restituisce il numero totale di pezzi in cui è stata frammentata la password successiva; un secondo comando, parametrizzato con l'indice, restituisce il carattere o blocco corrispondente a quella posizione. Recuperare i pezzi uno per uno a mano sarebbe lento e soggetto a errori — l'approccio corretto è automatizzare la richiesta con un ciclo shell (`for`/`seq`) che interroga il servizio per ogni indice dal minimo al conteggio ottenuto, concatenando l'output per ricostruire il segreto completo.
+Il servizio è una API testuale su netcat: un comando restituisce il
+numero totale di pezzi, un secondo comando (con l'indice) restituisce il
+pezzo in quella posizione. Farlo a mano è lento e sbagliabile —
+l'approccio giusto è un ciclo shell (`for`/`seq`) che interroga per ogni
+indice dal minimo al totale, concatenando l'output per ricostruire il
+segreto.
 
-## Sfruttamento
+## ----[ 0x03 · exploit ]----
 
-1. Richiesta del numero totale di pezzi tramite il comando dedicato del protocollo del servizio:
+1. Numero totale di pezzi tramite il comando dedicato:
 
 ```bash
 echo "<COMANDO_COUNT>" | nc localhost 30003
 ```
 
-Il servizio risponde con il numero di pezzi totali da recuperare.
-
-2. Ciclo automatico per interrogare il servizio per ogni indice e riassemblare l'output:
+2. Ciclo automatico su tutti gli indici, riassemblando:
 
 ```bash
 for i in $(seq 0 N); do
@@ -38,20 +56,20 @@ for i in $(seq 0 N); do
 done
 ```
 
-Ogni chiamata a `nc` apre una nuova connessione, invia l'indice richiesto e riceve il pezzo corrispondente; il flag `-w 1` limita l'attesa per evitare che il ciclo si blocchi su connessioni che non chiudono lo stream.
+Ogni `nc` apre una connessione, invia l'indice e riceve il pezzo; `-w 1`
+limita l'attesa per non bloccare il ciclo su stream che non chiudono.
 
-3. Concatenando in ordine l'output di tutte le richieste si ottiene la password ricostruita pezzo per pezzo (valore omesso in questa versione pubblica).
+3. Concatenando in ordine si ottiene la password ricostruita (valore
+   omesso).
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-Tecnica di raccolta e riassemblaggio automatizzato applicata con successo: il servizio ha restituito tutti i pezzi richiesti per indice, la cui concatenazione produce la password del livello successivo (valore omesso in questa versione pubblica).
+Il servizio restituisce tutti i pezzi per indice; la loro concatenazione
+è la password del livello dopo (valore omesso). "Your First Script": il
+punto è proprio automatizzare invece di sudare a mano.
 
-## Nota di pubblicazione
+```
+--[ eof ]---------------------------------------------------------------
 
-Questa è la versione pubblicabile su GitHub secondo la dottrina BreachLab: spiega per intero il metodo (interrogazione per indice via netcat automatizzata con un ciclo shell) ma omette il nome esatto dei comandi del protocollo applicativo e la password ricostruita, per non fornire una scorciatoia a chi non ha ancora risolto il livello.
-
----
-
-## Crediti
-
-Livello risolto su BreachLab (https://breachlab.org), Ghost Track. Writeup pubblicato nel rispetto della dottrina "no spoilers" della piattaforma.
+  breachlab.org · ghost track
+```

@@ -1,63 +1,94 @@
-# Mirage Track - Mirage 5
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   mirage track · phile 0x05 · "trust the client"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: mirage-05  "Trust the Client"
+   class ...: web · privesc · unsigned session cookie
+   tools ...: devtools · base64
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Mirage Track
-- Livello: Mirage 5 ("Trust the Client")
-- Fonte appunti: `mirage_track/mirage05/notes.md`
+> "trust the client" — errore. il cookie di sessione è un JSON in chiaro
+> non firmato: `"role":"member"` → `"role":"admin"`, ricodifica, reload.
+> benvenuto in area admin.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-L'applicazione web "Trayl" (una dashboard di habit-tracking) espone una sezione "Workspace" con una voce di menu "Admin" marcata come ristretta (icona lucchetto). L'obiettivo è ottenere l'accesso a quell'area riservata per recuperare la credenziale dell'ambiente successivo della catena Mirage.
+"Trayl", dashboard di habit-tracking, ha una voce di menu "Admin" marcata
+come ristretta (lucchetto). Obiettivo: entrare in quell'area per la
+credenziale dell'ambiente successivo.
 
-## Nota di pubblicazione
+## ----[ 0x01 · recon ]----
 
-Questa versione è pensata per GitHub e segue la dottrina BreachLab: spiega il metodo per intero, ma rimuove credenziali, token di sessione e qualunque valore che permetterebbe di saltare il ragionamento o di riutilizzare un accesso non proprio.
+La dashboard `/` è libera e mostra un utente demo "Member". L'unico link
+che punta fuori è l'area admin nella sidebar, marcata come riservata.
+Visitandola da member si ottiene un "Access restricted" generico, niente
+indizi nell'HTML; `robots.txt` non aiuta.
 
-## Ricognizione
+L'indizio vero è nella richiesta HTTP stessa (via "copy as curl" dai
+devtools): c'è un header `authorization: Basic <base64>`, un cookie di
+sessione applicativo anch'esso Base64, un cookie di clearance del CDN e un
+session id opaco.
 
-La dashboard principale (`/`) è raggiungibile senza barriere e mostra un utente demo con piano "Member". L'unico elemento interattivo che punta fuori dalla home è un link verso un'area amministrativa nella sidebar, esplicitamente marcato come riservato agli admin del workspace.
+## ----[ 0x02 · il difetto ]----
 
-Visitando direttamente quell'area da utente member si ottiene una pagina "Access restricted" generica, senza ulteriori indizi lato HTML. Un controllo di `robots.txt` non produce nulla di operativamente utile.
+Decodificando il Basic Auth si ottiene `utente:password` in cui l'username
+è il nome dell'ambiente corrente — la credenziale già in uso, non quella
+del livello dopo. La privesc ovvia (username → `admin`, stessa password,
+ricodifica) non funziona: il Basic Auth autentica l'accesso
+all'host/ambiente a livello infra, non il ruolo applicativo.
 
-Il vero indizio emerge ispezionando la richiesta HTTP stessa verso l'area admin (via "copy as curl" dagli strumenti di sviluppo): sono presenti un header `authorization: Basic <base64>` e un cookie applicativo di sessione, anch'esso Base64, oltre a un cookie di clearance del CDN e a un identificativo di sessione opaco.
-
-## Tecnica
-
-Decodificando l'header Basic Auth si ottiene una coppia `utente:password` in cui l'username corrisponde al nome dell'ambiente corrente — la credenziale già in uso, non quella del livello successivo. Un primo tentativo di privilege escalation ovvio, sostituire l'username con `admin` mantenendo la stessa password e ricodificare in Base64, non funziona: l'header Basic Auth autentica probabilmente solo l'accesso all'host/ambiente a livello di infrastruttura, non il ruolo applicativo.
-
-La vera superficie di attacco è il cookie di sessione applicativo: decodificato da Base64 rivela un oggetto JSON in chiaro, **non firmato** (nessun JWT, nessun HMAC):
+La vera superficie è il cookie di sessione applicativo: decodificato da
+Base64 è un JSON in chiaro, **non firmato** (niente JWT, niente HMAC):
 
 ```json
 {"uid": "<REDACTED>", "role": "member"}
 ```
 
-Poiché il token non ha integrità verificata, è sufficiente modificare il campo `role` da `"member"` ad `"admin"`, ricodificare in Base64, e sostituire il cookie nel browser per essere trattati come amministratori dall'applicazione — un classico caso di privilege escalation per manomissione di un token di sessione non protetto crittograficamente.
+Nessuna integrità verificata → basta cambiare `role` da `"member"` a
+`"admin"`, ricodificare in Base64 e sostituire il cookie per essere
+trattati da admin. Privesc classica per manomissione di un token di
+sessione non protetto.
 
-Un tentativo di replicare la richiesta modificata tramite `fetch()` dalla console del browser, impostando manualmente l'header `Cookie`, non ha funzionato: i browser moderni bloccano la scrittura diretta dell'header `Cookie` da JavaScript per motivi di sicurezza (è un "forbidden header name"). La soluzione corretta è stata modificare il cookie reale del browser tramite gli strumenti di sviluppo (tab Application/Storage) e poi semplicemente ricaricare la pagina, lasciando che sia il browser a inviare il cookie modificato in una normale navigazione.
+Nota pratica: replicare la richiesta via `fetch()` impostando a mano
+l'header `Cookie` non funziona — i browser bloccano la scrittura di
+`Cookie` da JS ("forbidden header name"). Si modifica il cookie reale dai
+devtools (Application/Storage) e si ricarica.
 
-## Sfruttamento
+## ----[ 0x03 · exploit ]----
 
-1. Decodifica dell'header Basic Auth osservato nella richiesta (Base64 → `utente:password`); tentativo di sostituire l'utente con `admin` mantenendo la stessa password: non funziona, l'header Basic Auth non controlla il ruolo applicativo.
+1. Decodifica del Basic Auth (Base64 → `utente:password`); tentativo
+   `admin` + stessa password: non funziona, non controlla il ruolo.
 
-2. Decodifica del cookie di sessione applicativo, che rivela un JSON in chiaro con un campo `role`.
+2. Decodifica del cookie di sessione → JSON in chiaro con campo `role`.
 
-3. Manomissione del campo `role` (`member` → `admin`) e ricodifica in Base64 del JSON risultante.
+3. Manomissione `role` (`member` → `admin`) e ricodifica Base64.
 
-4. Primo tentativo, via `fetch()` dalla console con header `cookie` impostato manualmente nel payload della richiesta: fallisce silenziosamente, perché il browser ignora/blocca la scrittura diretta dell'header `Cookie` da script.
+4. Primo tentativo via `fetch()` con header `cookie` nel payload:
+   fallisce, il browser blocca la scrittura di `Cookie` da script.
 
-5. Sostituzione diretta del cookie di sessione nel browser (DevTools → Application → Cookies) col valore ricodificato con `role: admin`, seguita da un semplice reload della pagina dell'area admin: questa volta la richiesta va a buon fine.
+5. Sostituzione del cookie nel browser (DevTools → Application → Cookies)
+   col valore `role: admin`, poi reload dell'area admin: passa.
 
-6. La pagina admin restituita mostra un pannello con le credenziali per l'ambiente successivo (HTTP Basic: utente e chiave, valori non riportati in questa versione pubblica).
+6. La pagina admin mostra le credenziali per l'ambiente dopo (HTTP Basic:
+   utente e chiave, valori omessi).
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-Sfruttata la mancanza di integrità del cookie di sessione applicativo (Base64 di un JSON in chiaro, senza firma) per elevare il proprio ruolo da `member` ad `admin` e accedere al pannello admin. Ottenuta la credenziale HTTP Basic per l'ambiente successivo della catena Mirage. Valori letterali (credenziali, cookie) omessi in questa versione pubblica.
+Sfruttata la mancanza di integrità del cookie di sessione (Base64 di un
+JSON in chiaro, non firmato) per passare da `member` ad `admin` e prendere
+la credenziale HTTP Basic dell'ambiente successivo (valori omessi).
+Lezione: un token di sessione senza firma è un modulo che l'utente
+compila da sé.
 
----
+```
+--[ eof ]---------------------------------------------------------------
 
-## Crediti
-
-Lab: BreachLab. Pubblicare sempre con credito al progetto e senza spoiler risolutivi.
+  breachlab.org · mirage track
+```

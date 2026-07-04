@@ -1,69 +1,87 @@
-# Ghost Track - Ghost 15
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   ghost track · phile 0x0f · "ephemeral port"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: ghost-15  "Ephemeral Port"
+   class ...: port scan · tls service discovery
+   tools ...: nmap · openssl s_client
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Ghost Track
-- Livello: Ghost 15 ("Ephemeral Port")
-- Fonte appunti: `ghost_track/ghost15/notes.md`
+> un servizio nascosto in una porta effimera, 49000-49500. parla TLS, il
+> resto del range è chiuso. si scansiona, ci si collega, gli si dà del tu.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Il livello ("Ephemeral Port") indica che un operatore ha lasciato un servizio attivo su una porta effimera nel range 49000-49500. Il servizio parla TLS, il resto del range è chiuso. Bisogna trovarlo, connettersi e "salutarlo" per ottenere la password del livello successivo.
+Un operatore ha lasciato un servizio su una porta effimera nel range
+49000-49500. Parla TLS, il resto è chiuso. Va trovato, ci si connette e
+lo si "saluta" per ottenere la password del livello dopo.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-Il range indicato (49000-49500) è tipico delle porte effimere assegnate dinamicamente dal kernel, quindi non prevedibile a priori: va scansionato per intero. Una scansione mirata con nmap sul range indicato individua un'unica porta aperta, con servizio non riconosciuto ("unknown").
+Il range 49000-49500 è tipico delle porte effimere assegnate
+dinamicamente dal kernel: non prevedibile, va scansionato tutto. Una
+scansione nmap mirata trova un'unica porta aperta, servizio "unknown".
 
-## Tecnica
+## ----[ 0x02 · il difetto ]----
 
-Non essendo un servizio HTTP/SSH standard, il passo successivo è la sonda manuale del protocollo con uno strumento che parli TLS a basso livello. `openssl s_client` permette di stabilire una connessione TLS diretta e vedere sia il certificato presentato dal server sia il traffico applicativo che segue l'handshake — utile quando non si sa ancora che protocollo applicativo giri sopra TLS. Il certificato è self-signed, coerente con un servizio interno mai esposto pubblicamente. Dopo l'handshake, il server invia direttamente un prompt testuale che chiede la password del livello corrente: si tratta quindi di un servizio custom, testuale, incapsulato in TLS.
+Non è HTTP/SSH standard, quindi si sonda il protocollo a mano con uno
+strumento che parli TLS a basso livello. `openssl s_client` stabilisce la
+connessione e mostra sia il certificato sia il traffico applicativo dopo
+l'handshake — utile quando non sai ancora che gira sopra TLS. Certificato
+self-signed, coerente con un servizio interno mai esposto. Dopo
+l'handshake, il server manda un prompt testuale che chiede la password
+corrente: servizio custom, testuale, incapsulato in TLS.
 
-## Sfruttamento
+## ----[ 0x03 · exploit ]----
 
-1. Scansione della fascia di porte effimere indicata nel brief:
+1. Scansione della fascia effimera:
 
 ```bash
 nmap -p 49000-49500 localhost
 ```
-
-Output (unica porta aperta, porta reale omessa):
 
 ```text
 PORT      STATE SERVICE
 <PORT>/tcp open  unknown
 ```
 
-2. Connessione TLS diretta alla porta trovata per ispezionare il servizio:
+2. Connessione TLS diretta alla porta trovata:
 
 ```bash
 openssl s_client -connect localhost:<PORT>
 ```
 
-L'handshake TLS 1.3 va a buon fine (con warning atteso di certificato self-signed), e subito dopo il completamento della connessione il servizio invia in chiaro sul canale cifrato:
+Handshake TLS 1.3 ok (warning atteso di self-signed), e subito:
 
 ```text
 Send the current level password:
 ```
 
-3. A quel punto è sufficiente digitare, nella stessa sessione `openssl s_client` ancora aperta, la password nota del livello corrente e premere invio: il servizio la valida e risponde con la password del livello successivo.
+3. Nella stessa sessione ancora aperta si digita la password nota del
+   livello corrente e invio: il servizio la valida e risponde con la
+   successiva.
 
 ```text
 <REDACTED>
 Correct! Next password: <REDACTED>
 ```
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-Individuato il servizio nascosto sulla porta effimera, TLS puro, che dopo autenticazione con la password corrente restituisce la password per il livello successivo. Il valore letterale non è riportato qui secondo la dottrina BreachLab.
+Servizio nascosto sulla porta effimera individuato, TLS puro, che dopo
+l'auth restituisce la password del livello dopo (valore fuori dal
+writeup). Lezione: le porte effimere non si indovinano, si scansionano
+per intero.
 
-## Nota di pubblicazione
+```
+--[ eof ]---------------------------------------------------------------
 
-Questa è la versione pensata per la pubblicazione su GitHub secondo la dottrina BreachLab (Writeups · Creators): il metodo è spiegato per intero, ma password, numero di porta specifico e flag letterali sono state sostituite con placeholder per non fornire scorciatoie a chi non ha ancora risolto il livello.
-
----
-
-## Crediti
-
-Livello risolto su BreachLab (https://breachlab.org), Ghost Track. Credito al progetto BreachLab per la piattaforma di training.
+  breachlab.org · ghost track
+```

@@ -1,44 +1,72 @@
-# Phantom Track - Phantom 13
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   phantom track · phile 0x0d · "deep roots"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: phantom-13  "Deep Roots"
+   class ...: persistence · system-wide via file ownership
+   tools ...: find -user · profile.d · pam_exec · cron.d
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Phantom Track
-- Livello: Phantom 13 ("Deep Roots")
-- Fonte appunti: `phantom_track/phantom13/notes.md`
+> non serve root per mettere radici: basta essere proprietario dei file
+> giusti. un `find /etc -user te` rivela che possiedi profile.d, PAM e
+> cron.d — tre sottosistemi, tre persistenze, zero exploit.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Il livello ("Deep Roots") gira in un container ephemeral personale, distrutto alla disconnessione. La missione (`cat ~/BRIEFING`) chiede di installare tre meccanismi di persistenza indipendenti, ciascuno su un diverso sottosistema Linux, capaci di sopravvivere a un reboot ed evadere un audit di sicurezza di base. Il brief specifica esplicitamente che non serve root: gli attaccanti moderni sfruttano ciò che possono già toccare con i permessi correnti. Il completamento si verifica con `/opt/verify-deep-roots.sh`.
+Container ephemeral personale, distrutto alla disconnessione. Il brief
+chiede tre meccanismi di persistenza indipendenti, ognuno su un diverso
+sottosistema Linux, capaci di sopravvivere a un reboot ed evadere un audit
+di base. Niente root: gli avversari moderni usano ciò che già toccano.
+Verifica con `/opt/verify-deep-roots.sh`.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-Il punto di partenza è l'enumerazione dei file di sistema scrivibili dall'utente corrente, usando `find <path> -user <utente>` su directory chiave (`/etc`, `/dev`, `/home`). Il risultato su `/etc` è sorprendente per un utente non privilegiato: l'utente risulta proprietario di diversi file critici solitamente riservati a root, tra cui uno script in `/etc/profile.d/`, la configurazione PAM `common-auth`, un file in `/etc/cron.d/`, `/etc/bash.bashrc` e altri. Questo è chiaramente un ambiente di laboratorio configurato apposta per permettere l'esercizio: ogni file elencato corrisponde a un diverso sottosistema Linux sfruttabile per la persistenza.
+Il punto di partenza è enumerare i file di sistema scrivibili dall'utente
+con `find <path> -user <utente>` su `/etc`, `/dev`, `/home`. Il risultato
+su `/etc` è sorprendente per un utente non privilegiato: possiede diversi
+file critici di solito riservati a root (uno script in `/etc/profile.d/`,
+`common-auth` di PAM, un file in `/etc/cron.d/`, `/etc/bash.bashrc` e
+altri). Ambiente di lab configurato apposta: ogni file = un sottosistema
+sfruttabile.
 
-## Tecnica
+## ----[ 0x02 · il difetto ]----
 
-Il compito richiede tre meccanismi indipendenti su tre sottosistemi diversi. Dalle note emergono chiaramente due implementazioni concrete più un terzo elemento predisposto ma non confermato in dettaglio:
+Tre meccanismi indipendenti, tutti senza root:
 
-1. **Profile.d (avvio shell di login)**: uno script in `/etc/profile.d/` viene eseguito automaticamente per ogni shell di login. Scrivervi dentro un reverse/bind shell garantisce l'esecuzione ad ogni login interattivo, senza bisogno di demoni o servizi visibili — un meccanismo "silenzioso" perché si attiva solo passivamente quando qualcuno apre una shell.
+1. **profile.d (login shell)** — uno script in `/etc/profile.d/` gira a
+   ogni shell di login: metterci una reverse/bind shell dà esecuzione a
+   ogni login, silenziosa perché passiva.
+2. **PAM (`pam_exec.so` in common-auth)** — `/etc/pam.d/common-auth` è la
+   catena di auth condivisa da SSH, login, sudo… Una riga
+   `auth optional pam_exec.so <comando>` esegue il comando a ogni auth,
+   particolarmente subdola perché sta dentro il flusso di autenticazione,
+   spesso ignorato dagli audit che guardano cron/systemd/home.
+3. **cron.d (job di sistema)** — un file in `/etc/cron.d/` scrivibile
+   installa un job system-wide (non nel crontab personale, meno ovvio) che
+   riesegue il payload.
 
-2. **PAM (`pam_exec.so` in common-auth)**: `/etc/pam.d/common-auth` è la catena di moduli di autenticazione condivisa da tutti i servizi PAM del sistema (SSH, login, sudo...). Aggiungendo una riga `auth optional pam_exec.so <comando>` si ottiene l'esecuzione del comando ad ogni tentativo di autenticazione — un meccanismo particolarmente subdolo perché si integra nel flusso di autenticazione stesso, spesso ignorato da audit superficiali che guardano solo a cron, systemd o file eseguibili sospetti in home directory.
+In tutti e tre, il payload è lo stesso one-liner reverse/bind shell su
+`/dev/tcp` (builtin di bash, niente `nc`). Il punto: in un ambiente mal
+configurato, un utente non privilegiato ottiene persistenza system-wide
+solo perché possiede file di config che vorrebbero root — nessuna vuln,
+solo un errore di ownership.
 
-3. **Cron.d (job pianificati di sistema)**: un file in `/etc/cron.d/`, scrivibile dall'utente, permette di installare un job schedulato a livello di sistema (non nel crontab personale, meno ovvio da controllare) che riesegue periodicamente il payload.
+## ----[ 0x03 · exploit ]----
 
-In tutti e tre i casi il payload usato nelle note è lo stesso tipo di one-liner di reverse/bind shell basato su `/dev/tcp` (una feature builtin di bash che apre socket TCP senza bisogno di `nc`).
-
-Il punto pedagogico centrale è che, in un ambiente mal configurato, un utente non privilegiato può ottenere persistenza system-wide semplicemente perché è proprietario (o ha permessi di scrittura) su file di configurazione che normalmente richiederebbero root — senza sfruttare alcuna vulnerabilità software, solo un errore di permessi/ownership.
-
-## Sfruttamento
-
-1. Lettura della missione:
+1. Brief:
 
 ```bash
 cat BRIEFING
 ```
 
-2. Enumerazione dei file di sistema di proprietà dell'utente corrente, il passo chiave suggerito dal brief stesso ("modern adversaries rarely need root to persist — they find what they can already touch"):
+2. Il passo chiave, i file di sistema che possiedi:
 
 ```bash
 find /etc -user <utente> 2>/dev/null
@@ -53,13 +81,15 @@ find /etc -user <utente> 2>/dev/null
 /etc/ld.so.preload
 ```
 
-Questo singolo comando rivela l'intera superficie di persistenza disponibile: sei file di sistema, sei sottosistemi Linux potenzialmente sfruttabili, tutti scrivibili senza root.
+Un comando, l'intera superficie di persistenza: sei file, sei
+sottosistemi, tutti scrivibili senza root.
 
-3. **Sottosistema 1 — profile.d**: modifica dello script in `/etc/profile.d/` per includere il payload, eseguito automaticamente a ogni login di shell.
+3. **profile.d** — payload nello script, eseguito a ogni login.
 
-4. **Sottosistema 2 — cron.d**: il file in `/etc/cron.d/` viene popolato con un job che esegue lo stesso payload periodicamente, a livello di sistema anziché nel crontab utente.
+4. **cron.d** — il file popolato con un job che riesegue il payload,
+   a livello di sistema.
 
-5. **Sottosistema 3 — PAM**: individuazione del modulo `pam_exec.so` disponibile sul sistema:
+5. **PAM** — individuazione del modulo:
 
 ```bash
 find / -name "pam_exec.so" 2>/dev/null
@@ -69,9 +99,9 @@ find / -name "pam_exec.so" 2>/dev/null
 /usr/lib/x86_64-linux-gnu/security/pam_exec.so
 ```
 
-e aggiunta di una riga in `/etc/pam.d/common-auth` che lo invoca ad ogni autenticazione, eseguendo il payload.
+e riga in `/etc/pam.d/common-auth` che lo invoca a ogni auth.
 
-6. Esecuzione dello script di verifica fornito dal laboratorio, che conferma la presenza di tre meccanismi di persistenza indipendenti:
+6. Verifica:
 
 ```bash
 /opt/verify-deep-roots.sh
@@ -84,16 +114,15 @@ e aggiunta di una riga in `/etc/pam.d/common-auth` che lo invoca ad ogni autenti
 [*] Use this as the password for phantom14.
 ```
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-Installati con successo tre meccanismi di persistenza indipendenti (profile.d, cron.d, PAM), sfruttando permessi di scrittura anomali su file di sistema critici assegnati all'utente non privilegiato. Il valore della flag non è riportato qui secondo la dottrina BreachLab; il punto didattico è che la persistenza non richiede sempre exploit o privilege escalation — spesso basta un audit di ownership sui file di sistema per trovare superfici già disponibili.
+Tre persistenze indipendenti (profile.d, cron.d, PAM) sfruttando ownership
+anomala su file di sistema (valore fuori dal writeup). Lezione: la
+persistenza spesso non chiede un exploit — chiede un audit di ownership che
+nessuno ha fatto.
 
-## Nota di pubblicazione
+```
+--[ eof ]---------------------------------------------------------------
 
-Questa è la versione pensata per la pubblicazione su GitHub secondo la dottrina BreachLab (Writeups · Creators): il metodo è spiegato per intero (i tre sottosistemi sfruttati e la logica di ciascun meccanismo di persistenza), ma il payload letterale copiato dalle note e la flag finale sono stati generalizzati/omessi per non fornire una copia diretta della soluzione.
-
----
-
-## Crediti
-
-Livello risolto su BreachLab (https://breachlab.org), Phantom Track. Credito al progetto BreachLab per la piattaforma di training.
+  breachlab.org · phantom track
+```

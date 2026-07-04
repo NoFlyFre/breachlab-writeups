@@ -1,38 +1,63 @@
-# Mirage Track - Mirage 6
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   mirage track · phile 0x06 · "other people's objects"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: mirage-06  "Other People's Objects"
+   class ...: web · IDOR · missing authz
+   tools ...: curl · bash loop
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Mirage Track
-- Livello: Mirage 6 ("Other People's Objects")
-- Fonte appunti: `mirage_track/mirage06/notes.md`
+> l'operatore ti identifica con un numerino nel cookie. numerino
+> sequenziale, controllato dal client, niente firma. lo si enumera, e in
+> un record altrui c'è la nota che apre l'admin console.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-L'applicazione "Parcelo" (un portale di gestione spedizioni per operatori) identifica l'operatore loggato tramite un cookie applicativo che contiene un identificativo numerico. L'obiettivo è capire se questo identificativo può essere manipolato per accedere ai dati di altri operatori (IDOR — Insecure Direct Object Reference) e, tramite quello, raggiungere un pannello con la credenziale per l'ambiente successivo.
+"Parcelo", portale di gestione spedizioni, identifica l'operatore loggato
+con un cookie che contiene un id numerico. Obiettivo: capire se quell'id
+si può manipolare per accedere ai dati di altri operatori (IDOR) e da lì
+raggiungere il pannello con la credenziale dell'ambiente successivo.
 
-## Nota di pubblicazione
+## ----[ 0x01 · recon ]----
 
-Questa versione è pensata per GitHub e segue la dottrina BreachLab: spiega per intero la tecnica di enumerazione IDOR, ma omette credenziali, cookie di sessione e la chiave finale ottenuta.
+La home mostra le spedizioni dell'operatore corrente. Nella richiesta HTTP
+c'è un cookie con un id numerico dell'operatore, passato client-side senza
+firma né token che lo leghi all'utente autenticato (l'unica altra
+credenziale è `Authorization: Basic`, che autentica l'ambiente, non
+l'identità del singolo operatore).
 
-## Ricognizione
+## ----[ 0x02 · il difetto ]----
 
-La pagina principale mostra le spedizioni assegnate all'operatore corrente. Ispezionando la richiesta HTTP si nota un cookie applicativo con un identificativo numerico dell'operatore, passato lato client senza alcuna firma o token che leghi quel valore all'utente autenticato (l'unica altra credenziale è l'header `Authorization: Basic`, che autentica l'accesso all'ambiente, non l'identità dell'operatore specifico).
+L'id operatore è numerico, sequenziale e interamente controllato dal
+client, e niente lo lega alla sessione: candidato naturale a **IDOR**.
+Cambiando il numero si accede ai dati altrui. Per verificarlo in modo
+sistematico, uno script itera un intervallo (default 0-100) tenendo fissi
+gli altri header, confrontando la dimensione della risposta con quella
+"vuota" tipica per isolare in fretta gli operatori con contenuto diverso.
 
-## Tecnica
+Enumerazione mirata di un difetto di access control sul target di training
+— non un tentativo di indovinare password/flag/SSH, le uniche categorie
+escluse dalla regola "no brute force" della dottrina.
 
-Poiché l'identificativo dell'operatore è un valore numerico sequenziale interamente controllato dal client, e nessun controllo sembra legarlo alla sessione autenticata, è un candidato naturale per un IDOR: sostituendo il numero si potrebbe accedere ai dati di altri operatori. Per verificarlo sistematicamente è stato scritto uno script che itera un intervallo di valori (di default 0-100) mantenendo invariati gli altri header di autenticazione/sessione, confrontando la dimensione della risposta con quella "vuota" tipica per isolare rapidamente gli operatori con contenuto diverso dal default, senza dover ispezionare manualmente ogni risposta.
+Uno degli operatori enumerati espone, nella colonna "Notes" di una
+spedizione, un appunto interno lasciato in produzione: un role check
+mancante su un endpoint admin, quindi invocabile da qualunque operatore
+autenticato.
 
-Questa è un'enumerazione mirata di un difetto di controllo degli accessi (IDOR) sul target di training stesso — non un tentativo di indovinare password, flag o accesso SSH, che sono le uniche categorie escluse dalla regola "no brute force" della dottrina BreachLab.
+## ----[ 0x03 · exploit ]----
 
-Uno degli operatori enumerati espone, nella colonna "Notes" di una spedizione, un appunto operativo interno lasciato per errore in produzione: un controllo di ruolo mancante su un endpoint di amministrazione, accessibile quindi da qualunque operatore autenticato, non solo dagli admin.
+1. Osservazione della richiesta autenticata di base, col cookie
+   dell'operatore identificato dal numero.
 
-## Sfruttamento
-
-1. Osservazione della richiesta autenticata di base, con il cookie dell'operatore identificato dal proprio numero.
-
-2. Scrittura di uno script di enumerazione che ripete la stessa richiesta variando solo l'identificativo dell'operatore nel cookie, confrontando la dimensione della risposta con la dimensione "vuota" nota per individuare rapidamente operatori con contenuto anomalo:
+2. Script di enumerazione che ripete la richiesta variando solo l'id
+   nell'cookie, confrontando la dimensione della risposta col "vuoto":
 
 ```bash
 BASE_URL="https://mirage-l6.breachlab.org/"
@@ -49,22 +74,29 @@ for n in $(seq "$MIN" "$MAX"); do
 done
 ```
 
-3. Esecuzione dello script sull'intervallo di default, individuazione di un operatore con risposta anomala (dimensione diversa dal "vuoto").
+3. Esecuzione sull'intervallo di default → un operatore con risposta
+   anomala (dimensione diversa dal vuoto).
 
-4. Ispezione della pagina di quell'operatore, che mostra una spedizione con una nota interna anomala:
+4. La sua pagina mostra una spedizione con una nota interna:
 
 ```text
 Internal escalation: role check absent on /admin/console — any authenticated operator can invoke. Authz patch pending ops review.
 ```
 
-5. Accesso diretto all'endpoint di amministrazione indicato dalla nota (mantenendo la stessa sessione autenticata come operatore qualsiasi), che espone un pannello "Admin console" con overview operativa e un pannello con le credenziali per l'ambiente successivo (valori omessi in questa versione pubblica).
+5. Accesso diretto a `/admin/console` con la stessa sessione da operatore
+   qualsiasi: "Admin console" con overview operativa e le credenziali per
+   l'ambiente dopo (valori omessi).
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-Sfruttato un IDOR sul cookie applicativo dell'operatore per enumerare gli account e scoprire, tramite una nota lasciata in un record di un altro operatore, un controllo di autorizzazione mancante sull'endpoint di amministrazione (nessun controllo di ruolo, accessibile da qualunque operatore autenticato). Ottenuta la credenziale HTTP Basic per l'ambiente successivo della catena Mirage. Valori letterali omessi in questa versione pubblica.
+IDOR sul cookie operatore per enumerare gli account, e in un record altrui
+la nota che rivela un authz mancante su `/admin/console`: da lì la
+credenziale HTTP Basic dell'ambiente successivo (valori omessi). Lezione:
+un id lato client senza controllo lega niente — e le note "interne"
+finiscono in produzione.
 
----
+```
+--[ eof ]---------------------------------------------------------------
 
-## Crediti
-
-Lab: BreachLab. Pubblicare sempre con credito al progetto e senza spoiler risolutivi.
+  breachlab.org · mirage track
+```

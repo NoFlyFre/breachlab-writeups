@@ -1,86 +1,104 @@
-# Phantom Track - Phantom 4
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   phantom track · phile 0x04 · "misplaced power"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: phantom-04  "Misplaced Power"
+   class ...: privesc / SUID interpreter (python)
+   tools ...: find · file · python3 REPL
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Phantom Track
-- Livello: Phantom 4 ("Misplaced Power")
-- Fonte appunti: `phantom_track/phantom04/notes.md`
+> un interprete general-purpose con bit SUID: cosa che non dovrebbe mai
+> esistere. non è di root, è di un utente che legge più di te. lo trovi,
+> lo lanci, e sei lui.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Il briefing chiarisce l'obiettivo: sul sistema esiste un interprete general-purpose con bit SUID impostato, cosa che non dovrebbe mai accadere. Non è di proprietà di root, ma di un utente che può leggere più dati dell'utente corrente. Bisogna enumerare i binari SUID, capire quale è fuori posto, e usarlo per leggere la flag posseduta da quell'utente.
+Il brief: sul sistema c'è un interprete general-purpose con SUID. Non è di
+root ma di un utente che può leggere più dati di te. Enumerare i SUID,
+capire quale è fuori posto, e usarlo per leggere la flag di quell'utente.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-Un primo tentativo diretto di eseguire l'interprete sospetto come modulo Python fallisce in modo rivelatore, con un errore di sintassi che indica byte non validi come sorgente Python. Questo suggerisce che il binario non è uno script testuale, ma un eseguibile compilato (l'header ELF inizia con byte non validi come sorgente Python).
+Un tentativo di eseguire il binario sospetto come modulo Python fallisce
+in modo rivelatore: errore di sintassi su byte non validi come sorgente —
+è un ELF compilato (l'header ELF non è codice Python). L'enumerazione dei
+SUID conferma: uno (`-rwsr-x---`) è di un account non di sistema e di un
+gruppo che coincide con l'utente corrente, anomalo rispetto agli altri
+(tutti di `root`). `file` conferma: vero ELF SUID, non uno script.
+Eseguendolo si apre una REPL Python 3 con l'EUID del proprietario.
 
-La successiva enumerazione dei binari SUID sul sistema conferma il sospetto: tra i binari con bit SUID attivo (`-rwsr-x---`), uno risulta posseduto da un account non di sistema e appartenente a un gruppo che coincide con l'utente della sessione corrente — un'anomalia rispetto agli altri binari SUID standard di sistema (tutti posseduti da `root`).
+## ----[ 0x02 · il difetto ]----
 
-Un controllo con `file` conferma che si tratta di un vero eseguibile ELF con SUID, non di uno script.
+Classico **SUID su interprete general-purpose**: un binario che incapsula
+Python completo, marcato SUID ed eseguibile da un gruppo. Python ha
+accesso completo alle syscall via `os` e simili, quindi chi lo lancia
+ottiene di fatto una shell con l'EUID del proprietario, bypassando le
+restrizioni sui suoi file.
 
-Eseguendolo direttamente si apre una vera REPL Python 3, ma in esecuzione con l'identità effettiva del proprietario del binario, non dell'utente che lo lancia.
+Principio generale (GTFOBins per `python`/`python3`): qualunque interprete
+general-purpose con SUID = privesc completa verso il proprietario, perché
+esegue codice arbitrario (lettura file, `os.system`, spawn shell) con
+l'UID effettivo ereditato dal SUID.
 
-## Tecnica
+## ----[ 0x03 · exploit ]----
 
-Questo è un classico caso di **SUID su interprete general-purpose**: un binario che incapsula un interprete Python completo viene marcato SUID e reso eseguibile da un gruppo di utenti. Poiché Python è un linguaggio interpretato general-purpose con accesso completo a syscall tramite i moduli `os` e simili, qualunque utente in grado di lanciare questo binario ottiene di fatto una shell con i privilegi effettivi del proprietario del binario, bypassando qualsiasi restrizione di accesso ai file di quell'utente.
-
-Il principio generale (documentato anche in GTFOBins per `python`/`python3`) è che qualsiasi interprete general-purpose con SUID equivale a privilege escalation completa verso l'utente proprietario, perché l'interprete permette di eseguire codice arbitrario (lettura file, `os.system`, spawn di shell) con l'UID effettivo ereditato dal bit SUID.
-
-## Sfruttamento
-
-1. Tentativo iniziale fallito di eseguire il binario come modulo Python, che rivela trattarsi di un ELF e non di uno script:
+1. Tentativo fallito che rivela l'ELF:
 
 ```bash
 python3 /usr/local/bin/<nome_binario_suid>
 ```
 
-2. Enumerazione sistematica di tutti i binari SUID sul filesystem per individuare l'anomalia (proprietario non-root, eseguibile da un gruppo utente):
+2. Enumerazione dei SUID per trovare l'anomalia:
 
 ```bash
 find / -type f -perm -4000 -ls 2>/dev/null
 ```
 
-3. Verifica del tipo di file per confermare che è un vero binario ELF con SUID e non uno script interpretato:
+3. Verifica del tipo:
 
 ```bash
 file /usr/local/bin/<nome_binario_suid>
 ```
 
-4. Esecuzione diretta del binario, che apre una REPL Python con i privilegi effettivi del proprietario del file:
+4. Esecuzione → REPL Python coi privilegi del proprietario:
 
 ```bash
 /usr/local/bin/<nome_binario_suid>
 ```
 
-5. All'interno della REPL, uso dei privilegi ereditati per esplorare il filesystem dell'utente target e localizzare la flag:
+5. Dentro la REPL, si localizza la flag dell'utente target:
 
 ```python
 >>> import os
 >>> os.system("find / -user <utente_target> -ls 2>/dev/null")
 ```
 
-L'output rivela il percorso di un file protetto (`-rw-------`) posseduto dall'utente target.
+6. Leggerla con `os.system("cat ...")` fallisce (la subshell non mantiene
+   lo stesso contesto privilegiato per quel file).
 
-6. Un tentativo di leggerlo tramite `os.system("cat ...")` fallisce con permesso negato, perché la subshell lanciata da `os.system` non mantiene lo stesso comportamento privilegiato per l'accesso a quel file in quel contesto.
-
-7. La lettura diretta tramite le funzioni native dell'interprete Python (`open()`), che opera con l'EUID del processo Python stesso (quello ereditato dal SUID), invece riesce:
+7. La lettura nativa con `open()`, che opera con l'EUID del processo
+   Python (ereditato dal SUID), riesce:
 
 ```python
 >>> print(open("<percorso_file_flag>").read())
 ```
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-La flag è stata letta direttamente dall'interprete Python SUID, sfruttando il fatto che `open()` chiamato dall'interno del processo con l'EUID del proprietario del binario bypassa i permessi restrittivi del file, mentre chiamare una subshell esterna con `os.system()` in questo caso non manteneva lo stesso comportamento privilegiato per l'accesso al file. Il valore letterale della flag non viene riportato in questa versione.
+Flag letta dall'interprete SUID: `open()` dall'interno del processo con
+l'EUID del proprietario bypassa i permessi, mentre `os.system()` no
+(valore fuori dal writeup). Lezione: un interprete SUID è una shell
+privilegiata travestita — e `open()` nativo batte la subshell.
 
-## Nota di pubblicazione
+```
+--[ eof ]---------------------------------------------------------------
 
-Questa è la versione pensata per la pubblicazione su GitHub, in conformità con la dottrina BreachLab: insegna il metodo (identificazione di un interprete general-purpose con SUID anomalo, differenza tra `os.system()` e `open()` nativo rispetto all'EUID effettivo) senza riportare nomi di file/utenti specifici del lab né il valore della flag.
-
----
-
-## Crediti
-
-Livello e piattaforma: BreachLab (breachlab.org) — Phantom Track. Se questo writeup genera revenue, parte del ricavato va devoluta secondo la dottrina "if it earns, give back" di BreachLab.
+  breachlab.org · phantom track
+```

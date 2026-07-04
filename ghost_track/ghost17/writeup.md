@@ -1,80 +1,99 @@
-# Ghost Track - Ghost 17
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   ghost track · phile 0x11 · "no shell for you"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
-
-## Sommario
-
-- Track: Ghost Track
-- Livello: Ghost 17 ("No Shell For You")
-- Fonte appunti: `ghost_track/ghost17/notes.md`
-
-## Obiettivo
-
-L'account `ghost17` è un relay automatizzato senza shell interattiva: la sessione SSH si chiude subito dopo il login. L'obiettivo è recuperare la credenziale per il livello successivo sfruttando il fatto che il server SSH accetta ed esegue comandi one-off passati direttamente sulla riga di comando, anche se non concede un prompt interattivo.
-
-## Ricognizione
-
-Il primo tentativo di connessione (`ssh ghost17@... -p 2222`) restituisce il banner del livello e chiude subito la connessione: non c'è modo di ottenere un prompt bash persistente su questo account. Questo è tipico di configurazioni SSH con `ForceCommand` o shell ristrette che processano solo il comando passato inline e poi terminano la sessione.
-
-Passando un comando esplicito come argomento SSH (`ssh host "ls"`), invece, il server lo esegue e restituisce l'output prima di chiudere — confermando che l'esecuzione "one-shot" funziona, solo la shell interattiva è disabilitata.
-
-## Tecnica
-
-La tecnica è l'uso del meccanismo standard di SSH per l'esecuzione remota di comandi singoli: `ssh utente@host "comando"`. Quando si passa un comando come argomento a `ssh`, il client apre una sessione, esegue esattamente quel comando sul server (bypassando qualsiasi shell interattiva di login) e restituisce stdout/stderr al client prima di chiudere la connessione. Questo è indipendente dal fatto che l'account abbia una shell interattiva assegnata o meno: se il demone SSH consente l'esecuzione di comandi, l'operazione riesce comunque.
-
-Da qui, l'enumerazione della home directory dell'utente remoto (`ls`) e la lettura dei file trovati (`cat <file>`) permettono di raccogliere le informazioni necessarie senza mai ottenere una shell interattiva.
-
-## Sfruttamento
-
-1. Verifica che la sessione interattiva sia effettivamente disabilitata:
-
-```bash
-ssh ghost17@204.168.229.209 -p 2222
-(ghost17@204.168.229.209) Password: 
-
-Connection to 204.168.229.209 closed.
+   target ..: ghost-17  "No Shell For You"
+   class ...: ssh · non-interactive command exec
+   tools ...: ssh "cmd"
+   author ..: noflyfre
+   status ..: owned
 ```
 
-La connessione si chiude immediatamente dopo l'autenticazione, senza offrire un prompt.
+[← indice](../../README.md)
 
-2. Esecuzione di un comando singolo passato inline a `ssh`, per enumerare la home directory remota:
+> l'account è un relay senza shell: appena entri, la sessione si chiude
+> in faccia. ma SSH esegue comandi one-off anche senza prompt — e tanto
+> basta.
+
+## ----[ 0x00 · intel ]----
+
+`ghost17` è un relay automatizzato senza shell interattiva: la sessione
+SSH chiude subito dopo il login. Obiettivo: recuperare la credenziale del
+livello dopo sfruttando il fatto che il server SSH accetta ed esegue
+comandi passati inline sulla riga di comando, anche senza dare un prompt.
+
+## ----[ 0x01 · recon ]----
+
+Il primo tentativo (`ssh ghost17@<host> -p 2222`) restituisce il banner e
+chiude subito: nessun prompt bash persistente. Tipico di configurazioni
+con `ForceCommand` o shell ristrette che processano solo il comando
+inline e poi terminano.
+
+Passando invece un comando esplicito come argomento (`ssh host "ls"`), il
+server lo esegue e restituisce l'output prima di chiudere: l'esecuzione
+one-shot funziona, è solo la shell interattiva a essere disabilitata.
+
+## ----[ 0x02 · il difetto ]----
+
+Meccanismo standard di SSH per l'esecuzione remota di comandi singoli:
+`ssh utente@host "comando"`. Il client apre una sessione, esegue esatto
+quel comando (bypassando la shell interattiva di login) e restituisce
+stdout/stderr prima di chiudere. Indipendente dall'avere o meno una shell
+assegnata: se il demone consente l'esecuzione comandi, passa. Da lì, `ls`
+sulla home remota e `cat` sui file bastano a raccogliere tutto, senza mai
+una shell interattiva.
+
+## ----[ 0x03 · exploit ]----
+
+1. Verifica che la sessione interattiva sia disabilitata:
 
 ```bash
-ssh ghost17@204.168.229.209 -p 2222 "ls"
-(ghost17@204.168.229.209) Password: 
+ssh ghost17@<host> -p 2222
+(ghost17@<host>) Password:
+
+Connection to <host> closed.
+```
+
+Chiude subito dopo l'auth, nessun prompt.
+
+2. Comando singolo inline per enumerare la home remota:
+
+```bash
+ssh ghost17@<host> -p 2222 "ls"
+(ghost17@<host>) Password:
 handoff
 ```
 
-Viene individuato un unico elemento nella home.
+Un solo elemento nella home.
 
-3. Un tentativo di trattarlo come directory fallisce, confermando che si tratta di un file regolare:
+3. Trattarlo da directory fallisce → è un file regolare:
 
 ```bash
-ssh ghost17@204.168.229.209 -p 2222 "cd handoff"
-(ghost17@204.168.229.209) Password: 
+ssh ghost17@<host> -p 2222 "cd handoff"
+(ghost17@<host>) Password:
 /bin/bash: line 1: cd: handoff: Not a directory
 ```
 
-4. Lettura del contenuto del file con lo stesso approccio one-off:
+4. Lettura del file con lo stesso approccio one-off:
 
 ```bash
-ssh ghost17@204.168.229.209 -p 2222 "cat handoff"
-(ghost17@204.168.229.209) Password: 
+ssh ghost17@<host> -p 2222 "cat handoff"
+(ghost17@<host>) Password:
 <REDACTED>
 ```
 
-Il contenuto del file è la credenziale richiesta per procedere.
+## ----[ 0x04 · loot ]----
 
-## Risultato
+`ssh host "comando"` contro un account senza shell restituisce comunque
+l'output: la lettura del file nella home espone la credenziale del
+livello dopo (valore fuori dal writeup). Lezione: "niente shell" non
+vuol dire "niente esecuzione".
 
-L'esecuzione di comandi SSH non interattivi (`ssh host "comando"`) contro un account privo di shell restituisce comunque l'output desiderato: la lettura del file trovato nella home espone la credenziale per il livello successivo. Il valore letterale non è incluso in questo writeup.
+```
+--[ eof ]---------------------------------------------------------------
 
-## Nota di pubblicazione
-
-Questa è la versione pubblicabile su GitHub secondo la dottrina BreachLab: spiega per intero il metodo (esecuzione di comandi SSH one-off contro account senza shell interattiva), ma non riporta la password/credenziale risolutiva, in modo da preservare la sfida per gli altri operatori.
-
----
-
-## Crediti
-
-Livello risolto su BreachLab (https://breachlab.org), Ghost Track — piattaforma di training autorizzato per pentest/CTF. Rispetta le Standing Orders: nessuno spoiler di password o flag letterali.
+  breachlab.org · ghost track
+```

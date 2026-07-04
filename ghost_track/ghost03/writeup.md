@@ -1,76 +1,97 @@
-# Ghost Track - Ghost 3
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   ghost track · phile 0x03 · "access denied"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: ghost-03  "Access Denied"
+   class ...: recon / unix group permissions
+   tools ...: whoami · groups · ls
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Ghost Track
-- Livello: Ghost 3 ("Access Denied")
-- Fonte appunti: `ghost_track/ghost03/notes.md`
+> "access denied" è un bluff. non serve scalare niente: sei già nel
+> gruppo giusto, devi solo accorgertene. il kernel ti farebbe entrare da
+> subito.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Il livello non presenta un banner con "Goal/Connect" esplicito nelle note; l'obiettivo emerge dal contenuto della home: recuperare le credenziali riservate lasciate da un operatore precedente in una directory ad accesso ristretto, descritta come accessibile solo in base all'appartenenza a un gruppo Unix specifico.
+Nessun banner "Goal/Connect": l'obiettivo emerge dalla home. Recuperare
+le credenziali riservate lasciate da un operatore precedente in una
+directory ad accesso ristretto, aperta solo a chi appartiene a un certo
+gruppo Unix.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-Nella home utente è presente un file di testo lasciato da un operatore precedente che descrive la struttura di una gerarchia di directory sensibili:
+Nella home c'è una nota di un operatore precedente che descrive una
+gerarchia di directory sensibili:
 
-- una directory leggibile da tutti
-- una directory ad accesso ristretto
-- una directory accessibile solo a root
+- una leggibile da tutti
+- una ad accesso ristretto
+- una solo per root
 
-La nota chiarisce esplicitamente che l'accesso segue lo schema dei gruppi Unix, e suggerisce di verificare la propria identità/appartenenza tramite gli strumenti standard della shell.
+La nota è esplicita: l'accesso segue lo schema dei gruppi Unix, e
+suggerisce di verificare la propria identità con gli strumenti standard
+della shell.
 
-## Tecnica
+## ----[ 0x02 · il difetto ]----
 
-La tecnica è enumerazione dei permessi Unix basata sui gruppi. Verificando l'appartenenza ai gruppi dell'utente corrente, si scopre che appartiene non solo al proprio gruppo primario ma anche a un gruppo aggiuntivo. Osservando i permessi della directory ristretta, si nota che è leggibile ed eseguibile proprio da quel gruppo aggiuntivo — non serve alcuna escalation di privilegi, basta che l'utente sia già membro del gruppo giusto perché il kernel gli conceda l'accesso alla directory e ai file al suo interno.
+Enumerazione dei permessi Unix basata sui gruppi. Controllando
+l'appartenenza dell'utente corrente si scopre che sta non solo nel
+gruppo primario ma anche in un gruppo aggiuntivo. E la directory
+ristretta è leggibile/eseguibile proprio da quel gruppo aggiuntivo:
+nessuna escalation, il kernel concede l'accesso già così com'è. Il
+"denied" era solo scenografia.
 
-## Sfruttamento
+## ----[ 0x03 · exploit ]----
 
-1. Enumerazione della home utente e lettura della nota lasciata dall'operatore precedente:
+1. Enumerazione della home e lettura della nota:
 
 ```bash
 ll
 cat map.txt
 ```
 
-La nota rivela la struttura delle directory riservate e il fatto che l'accesso dipende dal gruppo di appartenenza.
+Rivela la struttura delle directory riservate e la dipendenza dal gruppo.
 
-2. Verifica dell'identità e dei gruppi dell'utente corrente:
+2. Verifica di identità e gruppi:
 
 ```bash
 whoami
 groups
 ```
 
-L'output mostra che l'utente appartiene anche a un gruppo secondario oltre al proprio gruppo primario.
+L'utente appartiene anche a un gruppo secondario oltre al primario.
 
-3. Ispezione dei permessi delle sottodirectory della gerarchia riservata:
+3. Ispezione dei permessi delle sottodirectory riservate:
 
 ```bash
 ll /var/intel
 ```
 
-Una delle sottodirectory risulta leggibile/eseguibile proprio dal gruppo secondario di cui l'utente fa parte — quindi accessibile senza ulteriori privilegi.
+Una sottodirectory è leggibile/eseguibile proprio dal gruppo secondario
+— quindi accessibile senza altri privilegi.
 
-4. Accesso diretto alla directory riservata e lettura dei file al suo interno:
+4. Accesso diretto e lettura dei file:
 
 ```bash
 ll
 cat access_codes.dat operative_list.txt
 ```
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-Le credenziali riservate al gruppo "Analyst Only" sono state recuperate con successo tramite semplice enumerazione dei permessi di gruppo, senza necessità di privilege escalation (valore del codice omesso in questa versione pubblica).
+Le credenziali "Analyst Only" recuperate con la sola enumerazione dei
+permessi di gruppo, zero privilege escalation (valore omesso). La
+lezione: prima di pensare all'escalation, guarda a quali gruppi
+appartieni già — spesso la porta è aperta.
 
-## Nota di pubblicazione
+```
+--[ eof ]---------------------------------------------------------------
 
-Questa è la versione pubblicabile su GitHub secondo la dottrina BreachLab: spiega per intero il metodo (enumerazione dell'appartenenza ai gruppi Unix e sfruttamento dei permessi di directory già concessi) ma omette il codice di accesso recuperato, per non fornire una scorciatoia a chi non ha ancora risolto il livello.
-
----
-
-## Crediti
-
-Livello risolto su BreachLab (https://breachlab.org), Ghost Track. Writeup pubblicato nel rispetto della dottrina "no spoilers" della piattaforma.
+  breachlab.org · ghost track
+```
