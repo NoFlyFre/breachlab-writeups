@@ -1,6 +1,6 @@
 # BreachLab Writeups
 
-Writeup tecnici dei wargame di [BreachLab](https://breachlab.org) — un campo di addestramento per tradecraft offensivo e difensivo reale.
+Writeup dei wargame di [BreachLab](https://breachlab.org), il campo su cui mi alleno per il tradecraft offensivo e difensivo.
 
 ![Ghost Track](https://img.shields.io/badge/Ghost_Track-23%2F23-brightgreen)
 ![Phantom Track](https://img.shields.io/badge/Phantom_Track-18%2F31-yellow)
@@ -9,13 +9,13 @@ Writeup tecnici dei wargame di [BreachLab](https://breachlab.org) — un campo d
 
 ## Cos'è questo repo
 
-Questo repository raccoglie i writeup dei livelli di BreachLab che ho risolto, in tre track: **Ghost** (fondamentali di enumerazione e credential hunting), **Phantom** (post-exploitation e tradecraft operativo) e **Mirage** (ricognizione e sfruttamento di applicazioni web).
+Qui raccolgo i writeup dei livelli di BreachLab che ho risolto, divisi in tre track: Ghost (fondamentali di enumerazione e credential hunting), Phantom (post-exploitation e tradecraft operativo) e Mirage (ricognizione e sfruttamento di applicazioni web).
 
-Ogni writeup **insegna la tecnica**, non pubblica la soluzione: niente flag, password, chiavi o hash in chiaro. Solo il ragionamento, gli strumenti, e i passaggi che servono a chiunque per rifare il lavoro sulla propria istanza del livello.
+Ogni writeup racconta il ragionamento, gli strumenti e i passaggi che servono a rifare il lavoro sulla tua istanza del livello.
 
 ## Struttura
 
-Ogni livello vive nella propria cartella (`<track>/<track><NN>/`, numerata a due cifre per mantenere l'ordine corretto) e contiene, in questo repo pubblico, un solo file:
+Ogni livello vive nella sua cartella, con il nome nel formato `<track>/<track><NN>` numerato a due cifre così l'ordine resta quello giusto. Nel repo pubblico ogni cartella contiene un solo file:
 
 ```
 ghost_track/
@@ -29,19 +29,21 @@ mirage_track/
     writeup.md
 ```
 
-Le note grezze (`notes.md`, log di terminale/output completi) e la versione integrale del writeup con i valori reali (`writeup.uncensored.md`) restano **locali** e non vengono mai pubblicate — sono escluse via `.gitignore`, in conformità alla dottrina "teach technique, never publish answers" di BreachLab.
+Le note grezze (`notes.md`, log e output completi del terminale) e la versione integrale con i valori reali (`writeup.uncensored.md`) le tengo in locale e non finiscono mai online: sono escluse tramite `.gitignore`.
 
 ## Dottrina
+
+BreachLab chiede due cose a chi scrive writeup:
 
 > **Teach technique, never publish answers.** Writeups and videos are welcome when they teach the method — not the literal password or flag.
 >
 > **Credit BreachLab.** A link back or a name-drop in the description. That's it.
 
-Ogni writeup in questo repo rispetta questi due principi: spiega per intero la ricognizione, la vulnerabilità e i passaggi di sfruttamento, ma omette qualunque valore che permetterebbe di saltare il ragionamento.
+Ogni writeup qui rispetta entrambe: racconta per intero recon, vulnerabilità e sfruttamento, ma lascia fuori qualsiasi valore che permetterebbe di saltare il ragionamento.
 
 ## Ghost Track — 23/23 risolti
 
-Fondamentali Linux & shell: fluency da terminale, filesystem, processi, networking, encoding, permessi.
+Fondamentali di Linux e shell: dimestichezza col terminale, filesystem, processi, rete, encoding, permessi.
 
 | # | Livello | Stato | Writeup |
 |---|---------|:-----:|---------|
@@ -71,7 +73,7 @@ Fondamentali Linux & shell: fluency da terminale, filesystem, processi, networki
 
 ## Phantom Track — 18/31 risolti
 
-Post-exploitation completa: privesc, harvest & persist, movimento laterale, container/cloud, operazioni.
+Post-exploitation dall'inizio alla fine: privesc, raccolta e persistenza, movimento laterale, container e cloud, operazioni.
 
 <details open>
 <summary>Espandi tabella</summary>
@@ -114,7 +116,7 @@ Post-exploitation completa: privesc, harvest & persist, movimento laterale, cont
 
 ## Mirage Track — 7/41 risolti
 
-Web application exploitation, dal recon lato client fino ad attacchi AI/LLM.
+Sfruttamento di applicazioni web, dal recon lato client fino agli attacchi su AI e LLM.
 
 | # | Livello | Stato | Writeup |
 |---|---------|:-----:|---------|
@@ -126,10 +128,10 @@ Web application exploitation, dal recon lato client fino ad attacchi AI/LLM.
 | 5 | Trust the Client | ✅ | [writeup](mirage_track/mirage05/writeup.md) |
 | 6 | Other People's Objects | ✅ | [writeup](mirage_track/mirage06/writeup.md) |
 
-*Mirage arriva fino al livello 40: le cartelle sono già pronte, i writeup verranno aggiunti man mano che i livelli vengono risolti (in lavorazione: 7 — Break the Logic, 8 — Keys in the Bundle, 9 — Over-Posting, 10 — Row-Level Lies, quest'ultimo ancora in fase di risoluzione).*
+Il track arriva fino al livello 40. Le cartelle ci sono già; i writeup li aggiungo mano a mano che risolvo i livelli. In lavorazione adesso ci sono il 7 (Break the Logic), l'8 (Keys in the Bundle), il 9 (Over-Posting) e il 10 (Row-Level Lies), quest'ultimo ancora aperto.
 
 ## Crediti
 
-Lab: [BreachLab](https://breachlab.org). Se questi writeup ti hanno aiutato a costruire qualcosa che genera revenue, considera una donazione: [breachlab.org/donate](https://breachlab.org/donate).
+Il lab è [BreachLab](https://breachlab.org). Se questi writeup ti sono serviti per costruire qualcosa che ti fa guadagnare, valuta una donazione: [breachlab.org/donate](https://breachlab.org/donate).
 
-Se sei bloccato su un livello, usa i thread di aiuto per track su Discord — non chiedere spoiler qui.
+Se sei bloccato su un livello, chiedi nei thread di aiuto per track su Discord.
