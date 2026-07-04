@@ -112,8 +112,6 @@ Post-exploitation completa: privesc, harvest & persist, movimento laterale, cont
 
 </details>
 
-*Il track Phantom ufficiale arriva fino al livello 30 (31 livelli, 0–30). Le cartelle `phantom31/` e `phantom32/` presenti nel repo sono probabilmente residue da una numerazione precedente — vedi nota più sotto.*
-
 ## Mirage Track — 7/41 risolti
 
 Web application exploitation, dal recon lato client fino ad attacchi AI/LLM.
