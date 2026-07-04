@@ -1,41 +1,43 @@
-# Mirage Track - Mirage 3
+```
+ ========================================================================
+   B R E A C H L A B   ::   F I E L D   N O T E S
+ ------------------------------------------------------------------------
+   mirage track · phile 0x03 · "source maps talk"
+ ========================================================================
 
-[← Torna all'indice](../../README.md)
+   target ..: mirage-03  "Source Maps Talk"
+   class ...: web · client-side leak → ops console pivot
+   tools ...: browser devtools · jwt decode · un occhio ai commenti
+   author ..: noflyfre
+   status ..: owned
+```
 
-## Sommario
+[← indice](../../README.md)
 
-- **Track:** Mirage
-- **Livello:** Mirage 3 ("Source Maps Talk")
-- **Fonte appunti:** `mirage_track/mirage03/notes.md`
+> una dashboard che non fa niente. un `<h1>`, uno "Workspace ready", e
+> un bundle javascript. il front-end è muto in superficie ma chiacchiera
+> parecchio se lo leggi: chiavi, commenti degli sviluppatori, una console
+> interna. si tira il filo finché non viene giù la catena.
 
-## Obiettivo
+## ----[ 0x00 · intel ]----
 
-Il livello espone una dashboard applicativa minimale ("Nimbus AI — Dashboard"). L'obiettivo è risalire, partendo dal solo bundle JavaScript servito al client, fino a un pannello operativo interno ("ops console") e da lì recuperare le credenziali per l'ambiente successivo della catena Mirage.
+Il livello espone "Nimbus AI — Dashboard", minimale. L'obiettivo è
+risalire dal solo bundle JavaScript servito al client fino a un pannello
+operativo interno (`/internal`) e, da lì, alle credenziali per
+l'ambiente successivo della catena Mirage.
 
-## Ricognizione
+## ----[ 0x01 · recon ]----
 
-La pagina principale è statica e non offre superficie di attacco diretta: un `<h1>Dashboard</h1>` e uno stato "Workspace ready". Lo script referenziato è `/static/app.min.js`, un bundle minificato ma comunque leggibile lato client. Analizzando il bundle si trova un oggetto globale `window.__NIMBUS_ENV__` con URL e chiave anonima di un backend-as-a-service esposti direttamente nel codice front-end, prassi comune ma che qui nasconde più di quanto sembri.
-
-Accanto al bundle minificato è presente anche il sorgente pre-minify `src/app.js`, con commenti lasciati dagli sviluppatori: uno di questi rivela l'esistenza di una console operativa nascosta all'indirizzo `/internal`, protetta da una "build key", e la build key stessa è presente in chiaro nel sorgente non minificato.
-
-## Tecnica
-
-La tecnica combina più passaggi in una catena:
-
-1. **Fuga di configurazione client-side** — le chiavi del backend e la build key delle ops sono incorporate nel codice JavaScript servito al browser, quindi accessibili a chiunque ispezioni i sorgenti pubblici, senza bisogno di autenticazione.
-2. **Decodifica di un JWT** — la chiave "anon" del backend non è una stringa opaca ma un JSON Web Token. Decodificandone header e payload (senza bisogno di conoscerne il secret, dato che JWT è firmato ma non cifrato) si conferma che è una chiave sintetica associata al progetto, utile per capire il contesto ma non direttamente sfruttabile per l'escalation successiva.
-3. **Uso della build key per autenticarsi alla ops console** — il commento nel sorgente indica esplicitamente che `/internal` accetta la build key come credenziale di accesso (form "Sign in with your build key").
-4. **Pivot a catena tramite ops console** — una volta dentro, la console non è il traguardo finale ma espone un pannello "Environments" che rivela URL, utente e chiave HTTP Basic per l'ambiente di produzione successivo nella catena di deployment, replicando lo stesso pattern "ogni livello nasconde le credenziali del successivo" osservato altrove in Mirage.
-
-## Sfruttamento
-
-1. Ispezione della dashboard e individuazione del bundle applicativo:
+La pagina è statica: `<h1>Dashboard</h1>`, stato "Workspace ready",
+zero superficie diretta. Lo script referenziato è `/static/app.min.js`,
+minificato ma leggibile:
 
 ```html
 <script src="/static/app.min.js" defer=""></script>
 ```
 
-2. Lettura del bundle minificato: espone la configurazione del backend direttamente in `window.__NIMBUS_ENV__`, incluso un JWT come chiave anonima.
+Dentro il bundle c'è un oggetto globale `window.__NIMBUS_ENV__` con URL
+e chiave "anon" di un backend-as-a-service, incollati nel front-end:
 
 ```javascript
 window.__NIMBUS_ENV__ = {
@@ -44,7 +46,10 @@ window.__NIMBUS_ENV__ = {
 };
 ```
 
-3. Recupero del sorgente pre-minify `src/app.js`, più leggibile e con commenti degli sviluppatori che rivelano sia l'esistenza della ops console sia la variabile che contiene la build key necessaria per accedervi:
+Ma il vero regalo è accanto: il sorgente pre-minify `src/app.js`, coi
+commenti lasciati dagli sviluppatori. Uno rivela una ops console
+nascosta a `/internal`, protetta da una "build key" — che è lì sotto, in
+chiaro:
 
 ```javascript
 // src/app.js (original, pre-minify)
@@ -54,7 +59,29 @@ window.__NIMBUS_ENV__ = {
 const OPS_BUILD_KEY = "<REDACTED>";
 ```
 
-4. Decodifica del JWT usato come chiave anonima (header + payload), per confermarne la natura e il contesto (ruolo "anon", progetto sintetico):
+## ----[ 0x02 · la catena ]----
+
+Non è un singolo bug, è una catena di sviste che si concatenano:
+
+1. **config leak client-side** — chiavi del backend e build key delle
+   ops sono nel JavaScript servito al browser, leggibili da chiunque,
+   senza autenticazione.
+2. **jwt in chiaro** — la chiave "anon" non è una stringa opaca ma un
+   JWT. Decodificando header e payload (JWT è firmato, non cifrato) si
+   conferma che è una chiave sintetica legata al progetto: utile per il
+   contesto, non per l'escalation.
+3. **build key = pass per le ops** — il commento dice esplicitamente che
+   `/internal` accetta la build key come credenziale ("Sign in with your
+   build key").
+4. **pivot a catena** — dentro la ops console c'è un pannello
+   "Environments" che espone URL, utente e chiave HTTP Basic
+   dell'ambiente di produzione successivo. Stesso pattern di tutto
+   Mirage: ogni livello nasconde le credenziali del prossimo.
+
+## ----[ 0x03 · exploit ]----
+
+Decodifica del JWT usato come anon key (header + payload), giusto per
+capire con cosa si ha a che fare:
 
 ```json
 {
@@ -71,9 +98,11 @@ const OPS_BUILD_KEY = "<REDACTED>";
 }
 ```
 
-5. Accesso a `/internal`: la ops console richiede un "build key" tramite un semplice form POST. Inserendo la build key trovata nel sorgente, l'accesso viene concesso.
-
-6. All'interno della ops console, il pannello "Environments" espone URL, utente HTTP Basic e chiave di accesso per l'ambiente successivo, nascosta dietro un pulsante "Reveal" puramente cosmetico — il valore è già presente nell'HTML in un attributo `data-secret`, quindi non è una vera protezione:
+Poi `/internal`: un form POST che chiede la build key. Si incolla quella
+trovata nel sorgente e si entra. Dentro, il pannello "Environments"
+espone la credenziale per l'ambiente successivo dietro un bottone
+"Reveal" puramente cosmetico — il valore è già nell'HTML, in un attributo
+`data-secret`:
 
 ```html
 <div class="env-row">
@@ -85,16 +114,19 @@ const OPS_BUILD_KEY = "<REDACTED>";
  </div>
 ```
 
-## Risultato
+Il "Reveal" non protegge niente: è markup che nasconde solo agli occhi,
+non al sorgente.
 
-Seguendo la catena bundle minificato → sorgente pre-minify → build key → ops console `/internal` → pannello Environments, è stata ottenuta la credenziale HTTP Basic per l'ambiente successivo della catena Mirage: `<REDACTED>`.
+## ----[ 0x04 · loot ]----
 
-## Nota di pubblicazione
+Filo tirato per intero: bundle minificato → sorgente pre-minify → build
+key → ops console `/internal` → pannello Environments → credenziale HTTP
+Basic dell'ambiente successivo. I valori letterali (JWT, build key,
+chiave finale) restano fuori. La morale: tutto ciò che finisce nel bundle
+servito al client è pubblico, "Reveal" o no.
 
-Questa è la versione destinata alla pubblicazione su GitHub, in linea con la dottrina BreachLab (Writeups · Creators): l'intera catena di ragionamento — analisi del bundle minificato, recupero del sorgente non minificato, decodifica del JWT, uso della build key per autenticarsi alla ops console, e individuazione del pannello "Environments" come punto di leak delle credenziali per l'ambiente successivo — è spiegata per intero. Solo i valori letterali finali (JWT, build key, chiave HTTP Basic) sono stati rimossi per non fornire uno spoiler diretto ad altri operatori.
+```
+--[ eof ]---------------------------------------------------------------
 
----
-
-## Crediti
-
-Livello e ambiente forniti da [BreachLab](https://breachlab.org) — Mirage Track.
+  breachlab.org · mirage track
+```
