@@ -1,5 +1,7 @@
 # Ghost Track - Ghost 4
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - **Track:** Ghost Track
@@ -61,6 +63,8 @@ Filtrando il rumore ripetitivo e scartando i distrattori multipli si isola l'uni
 ## Nota di pubblicazione
 
 Questo writeup è la versione pubblicabile su GitHub secondo la dottrina BreachLab (`RULES · OPS DOCTRINE`): insegna il metodo (filtraggio mirato di grandi volumi di log per isolare l'anomalia reale tra rumore e distrattori) senza rivelare la password/flag letterale del livello.
+
+---
 
 ## Crediti
 

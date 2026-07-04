@@ -1,5 +1,7 @@
 # Mirage Track - Mirage 2
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Mirage Track
@@ -92,6 +94,8 @@ Token di sblocco decodificato correttamente (base64 → hex → plaintext) e inv
 ## Nota di pubblicazione
 
 Questa è la versione pensata per la pubblicazione su GitHub secondo la dottrina BreachLab (Writeups · Creators): il metodo è spiegato per intero, ma il codice di verifica, il token decodificato e la chiave finale sono stati sostituiti con placeholder per non fornire scorciatoie a chi non ha ancora risolto il livello.
+
+---
 
 ## Crediti
 

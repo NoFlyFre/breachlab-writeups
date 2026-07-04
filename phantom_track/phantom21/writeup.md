@@ -1,5 +1,7 @@
 # Phantom Track - Phantom 21
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Phantom Track
@@ -29,6 +31,8 @@ Non ci sono evidenze sufficienti nell'archivio per ricostruire la soluzione di q
 ## Nota di pubblicazione
 
 Questa è la versione pubblicabile su GitHub secondo la dottrina BreachLab. Non essendoci materiale grezzo da cui derivare un metodo, questo writeup non contiene contenuto tecnico da censurare: resta un placeholder che segnala onestamente l'assenza di dati, senza inventare tecniche, password o flag.
+
+---
 
 ## Crediti
 

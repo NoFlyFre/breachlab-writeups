@@ -1,5 +1,7 @@
 # Mirage Track - Mirage 6
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Mirage Track
@@ -60,6 +62,8 @@ Internal escalation: role check absent on /admin/console — any authenticated o
 ## Risultato
 
 Sfruttato un IDOR sul cookie applicativo dell'operatore per enumerare gli account e scoprire, tramite una nota lasciata in un record di un altro operatore, un controllo di autorizzazione mancante sull'endpoint di amministrazione (nessun controllo di ruolo, accessibile da qualunque operatore autenticato). Ottenuta la credenziale HTTP Basic per l'ambiente successivo della catena Mirage. Valori letterali omessi in questa versione pubblica.
+
+---
 
 ## Crediti
 

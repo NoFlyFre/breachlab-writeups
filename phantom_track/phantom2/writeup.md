@@ -1,5 +1,7 @@
 # Phantom Track - Phantom 2
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Phantom Track
@@ -78,6 +80,8 @@ L'apertura del file protetto con i privilegi dell'utente indicato nella regola s
 ## Nota di pubblicazione
 
 Questa è la versione pubblicabile su GitHub secondo la dottrina BreachLab: spiega per intero il metodo (lettura attenta di `sudo -l`, comprensione del campo `RunAs` non-root, uso di un editor concesso per leggere file altrui), ma non riporta la flag risolutiva, in modo da preservare la sfida per gli altri operatori.
+
+---
 
 ## Crediti
 

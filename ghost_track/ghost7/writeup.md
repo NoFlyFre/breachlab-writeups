@@ -1,5 +1,7 @@
 # Ghost Track - Ghost 7
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Ghost Track
@@ -52,6 +54,8 @@ Il file "di trasmissione" nascondeva, dietro un doppio strato di codifica (base6
 ## Nota di pubblicazione
 
 Questa è la versione pensata per la pubblicazione su GitHub, in conformità con la dottrina BreachLab: insegna il metodo (riconoscimento del formato xxd, decodifica base64 a catena) senza riportare il dump esadecimale completo né la password risultante, che permetterebbero di saltare direttamente alla soluzione.
+
+---
 
 ## Crediti
 

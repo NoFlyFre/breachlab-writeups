@@ -1,5 +1,7 @@
 # Ghost Track - Ghost 12
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Ghost Track
@@ -67,6 +69,8 @@ Accesso ottenuto tramite autenticazione a chiave pubblica, senza craccare nulla:
 ## Nota di pubblicazione
 
 Questa è la versione pensata per la pubblicazione su GitHub, in conformità con la dottrina BreachLab: insegna il metodo (identificazione e uso di una chiave SSH trapelata per credential reuse) senza riportare la chiave privata reale, gli indirizzi/porte specifici del lab o altri valori che permetterebbero di saltare direttamente alla soluzione.
+
+---
 
 ## Crediti
 

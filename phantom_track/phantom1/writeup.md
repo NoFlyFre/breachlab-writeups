@@ -1,5 +1,7 @@
 # Phantom Track - Phantom 1
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Phantom Track
@@ -69,6 +71,8 @@ Sfruttando `phantom-find -exec cat {} \;` sulla directory dell'utente bersaglio 
 ## Nota di pubblicazione
 
 Questa è la versione pensata per pubblicazione su GitHub, secondo la dottrina BreachLab: il metodo (individuazione del wrapper, uso di `-exec` per leggere file arbitrari con privilegi ereditati) è spiegato per intero — comandi, percorsi e nomi di binari restano in chiaro — ma il valore letterale della flag è stato rimosso. Chi legge deve rifare il ragionamento e l'exploitation per ottenerla.
+
+---
 
 ## Crediti
 

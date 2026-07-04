@@ -1,5 +1,7 @@
 # Phantom Track - Phantom 14
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Phantom Track
@@ -78,6 +80,8 @@ echo $(<percorso_del_file_target) > /tmp/shadow_copy
 ## Risultato
 
 Riprodotto il contenuto del file target in una copia temporanea usando esclusivamente la sostituzione di comando builtin `$(< file)` di bash, senza mai invocare un processo esterno per la lettura del file originale. Lo script di verifica ha confermato sia la corrispondenza byte-per-byte sia l'assenza di reader esterni registrati. Valore della flag omesso in questa versione pubblica. Il livello ha insegnato la distinzione tra I/O gestito internamente dalla shell e I/O che richiede fork/exec di un processo esterno — rilevante per capire cosa può o non può essere osservato da strumenti di auditing basati su syscall/processi (es. auditd, eBPF).
+
+---
 
 ## Crediti
 

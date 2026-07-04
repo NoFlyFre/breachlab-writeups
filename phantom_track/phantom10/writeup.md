@@ -1,5 +1,7 @@
 # Phantom Track - Phantom 10
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Phantom Track
@@ -70,6 +72,8 @@ La flag del livello era in realtà un valore di configurazione (variabile di amb
 ## Nota di pubblicazione
 
 Questa è la versione pensata per la pubblicazione su GitHub, in conformità con la dottrina BreachLab: insegna il metodo (enumerazione sistematica delle fonti classiche di credential harvesting, distinzione tra credenziali reali ed esche, ricerca testuale mirata come tecnica di fallback) senza riportare percorsi, nomi di host o valori letterali specifici del lab.
+
+---
 
 ## Crediti
 

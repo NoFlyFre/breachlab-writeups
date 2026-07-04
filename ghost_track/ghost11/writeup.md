@@ -1,5 +1,7 @@
 # Ghost Track - Ghost 11
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - **Track:** Ghost Track
@@ -84,6 +86,8 @@ La sequenza di identificazione (`file`) + decompressione mirata (`tar -xf` → `
 ## Nota di pubblicazione
 
 Questo writeup è la versione pubblicabile su GitHub secondo la dottrina BreachLab (`RULES · OPS DOCTRINE`): insegna il metodo (identificazione di formati file tramite magic number e decompressione a più livelli) senza rivelare la password/flag letterale del livello, in modo che chi legge debba comunque eseguire l'esercizio.
+
+---
 
 ## Crediti
 

@@ -1,5 +1,7 @@
 # Mirage Track - Mirage 5
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Mirage Track
@@ -53,6 +55,8 @@ Un tentativo di replicare la richiesta modificata tramite `fetch()` dalla consol
 ## Risultato
 
 Sfruttata la mancanza di integrità del cookie di sessione applicativo (Base64 di un JSON in chiaro, senza firma) per elevare il proprio ruolo da `member` ad `admin` e accedere al pannello admin. Ottenuta la credenziale HTTP Basic per l'ambiente successivo della catena Mirage. Valori letterali (credenziali, cookie) omessi in questa versione pubblica.
+
+---
 
 ## Crediti
 

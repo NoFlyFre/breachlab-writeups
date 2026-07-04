@@ -1,5 +1,7 @@
 # Phantom Track - Phantom 3
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Phantom Track
@@ -151,6 +153,8 @@ Sfruttando `env_keep+=LD_PRELOAD` nella policy sudoers, insieme a un comando NOP
 ## Nota di pubblicazione
 
 Questa è la versione pensata per pubblicazione su GitHub, secondo la dottrina BreachLab: il metodo (analisi di `sudo -l`, individuazione di `env_keep+=LD_PRELOAD`, costruzione di una shared library con constructor, injection via `LD_PRELOAD` su un binario NOPASSWD) è spiegato per intero — comandi, percorsi, sorgenti C e sintassi restano in chiaro. È stato mantenuto in chiaro anche l'output di ricognizione (contenuto di `.bash_history`/`.viminfo`/`.profile` esfiltrato durante la fase esplorativa) perché didatticamente utile e non costituisce la soluzione finale. È stato invece rimosso solo il valore letterale della flag finale.
+
+---
 
 ## Crediti
 

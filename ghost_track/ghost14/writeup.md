@@ -1,5 +1,7 @@
 # Ghost Track - Ghost 14
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Ghost Track
@@ -61,6 +63,8 @@ Sessione TLS stabilita con successo verso il servizio di controllo tramite `open
 ## Nota di pubblicazione
 
 Questa è la versione pubblicabile su GitHub secondo la dottrina BreachLab: spiega per intero il metodo (uso di `openssl s_client` per interagire con un servizio TLS-only) ma omette la password del livello corrente e la password/flag ottenuta come risultato, per non fornire una scorciatoia a chi non ha ancora risolto il livello.
+
+---
 
 ## Crediti
 

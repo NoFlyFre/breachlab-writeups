@@ -1,5 +1,7 @@
 # Mirage Track - Mirage 3
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - **Track:** Mirage
@@ -90,6 +92,8 @@ Seguendo la catena bundle minificato → sorgente pre-minify → build key → o
 ## Nota di pubblicazione
 
 Questa è la versione destinata alla pubblicazione su GitHub, in linea con la dottrina BreachLab (Writeups · Creators): l'intera catena di ragionamento — analisi del bundle minificato, recupero del sorgente non minificato, decodifica del JWT, uso della build key per autenticarsi alla ops console, e individuazione del pannello "Environments" come punto di leak delle credenziali per l'ambiente successivo — è spiegata per intero. Solo i valori letterali finali (JWT, build key, chiave HTTP Basic) sono stati rimossi per non fornire uno spoiler diretto ad altri operatori.
+
+---
 
 ## Crediti
 

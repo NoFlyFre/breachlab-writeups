@@ -1,5 +1,7 @@
 # Ghost Track - Ghost 13
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Ghost
@@ -35,6 +37,8 @@ L'invio corretto del comando `RETRIEVE` con il token valido al credential-broker
 ## Nota di pubblicazione
 
 Questo writeup è la versione pubblica (GitHub) delle note personali sul livello Ghost 13 di BreachLab. In conformità alla dottrina BreachLab (Writeups · Creators), il documento insegna il metodo — interazione manuale con un protocollo TCP testuale via netcat — ma non riporta i valori letterali dei token o della password finale, che il solutore deve ottenere in autonomia interagendo con il servizio.
+
+---
 
 ## Crediti
 

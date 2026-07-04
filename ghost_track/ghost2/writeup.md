@@ -1,5 +1,7 @@
 # Ghost Track - Ghost 2
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Ghost Track
@@ -68,6 +70,8 @@ Individuato il valore nascosto nell'ultimo file della sottocartella "leads" (il 
 ## Nota di pubblicazione
 
 Questa è la versione pensata per la pubblicazione su GitHub, in conformità con la dottrina BreachLab: insegna il metodo (enumerazione di dotfile, diffidenza verso documenti "esca") senza riportare il valore risolutivo trovato nel file finale.
+
+---
 
 ## Crediti
 

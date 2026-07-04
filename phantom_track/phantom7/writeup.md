@@ -1,5 +1,7 @@
 # Phantom Track - Phantom 7
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Phantom Track
@@ -116,6 +118,8 @@ Sfruttando una command injection nel binario SUID `system-checker`, tramite l'in
 ## Nota di pubblicazione
 
 Questa è la versione pensata per pubblicazione su GitHub, secondo la dottrina BreachLab: il metodo (enumerazione dei binari SUID, individuazione della command injection tramite `;`, conferma con `whoami`, exploitation finale) è spiegato per intero — comandi, percorsi, nome del binario e sintassi restano in chiaro. È stato rimosso solo il valore letterale della flag finale.
+
+---
 
 ## Crediti
 

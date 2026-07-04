@@ -1,5 +1,7 @@
 # Phantom Track - Phantom 6
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Phantom
@@ -41,6 +43,8 @@ Modificando lo script di manutenzione, eseguito periodicamente dal cron job con 
 ## Nota di pubblicazione
 
 Questo writeup è la versione pubblica (GitHub) delle note personali sul livello Phantom 6 di BreachLab. In conformità alla dottrina BreachLab (Writeups · Creators), il documento insegna il metodo — enumerazione dei cron job di sistema, individuazione di script con permessi eccessivi, e sfruttamento della riesecuzione periodica per eseguire comandi con privilegi altrui — ma non riporta il valore letterale della flag, che il solutore deve ottenere in autonomia ripetendo l'analisi.
+
+---
 
 ## Crediti
 

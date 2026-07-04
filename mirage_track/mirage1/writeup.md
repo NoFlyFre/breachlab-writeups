@@ -1,5 +1,7 @@
 # Mirage Track - Mirage 1
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Mirage
@@ -37,6 +39,8 @@ L'endpoint interno, una volta interrogato con il metodo e l'header corretti, ris
 ## Nota di pubblicazione
 
 Questo writeup è la versione pubblica (GitHub) delle note personali sul livello Mirage 1 di BreachLab. In conformità alla dottrina BreachLab (Writeups · Creators), il documento insegna il metodo — analisi del JavaScript client-side, lettura dei messaggi di errore HTTP per capire cosa manca in una richiesta, e forgiatura manuale di richieste con header custom — ma non riporta credenziali, chiavi di accesso o header di autorizzazione osservati durante la risoluzione, che il solutore deve ottenere in autonomia ripetendo l'analisi.
+
+---
 
 ## Crediti
 

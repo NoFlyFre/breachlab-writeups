@@ -1,5 +1,7 @@
 # Ghost Track - Ghost 8
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Ghost Track
@@ -45,6 +47,8 @@ Password/chiave del livello successivo recuperata leggendo l'ambiente di uno dei
 ## Nota di pubblicazione
 
 Questa è la versione pubblicabile su GitHub secondo la dottrina BreachLab: spiega per intero il metodo (enumerazione dei processi e lettura di `/proc/<pid>/environ` per recuperare variabili d'ambiente non visibili tramite `ps`) ma omette il nome esatto della variabile e il suo valore, per non fornire una scorciatoia a chi non ha ancora risolto il livello.
+
+---
 
 ## Crediti
 

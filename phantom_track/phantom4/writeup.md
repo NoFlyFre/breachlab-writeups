@@ -1,5 +1,7 @@
 # Phantom Track - Phantom 4
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Phantom Track
@@ -76,6 +78,8 @@ La flag è stata letta direttamente dall'interprete Python SUID, sfruttando il f
 ## Nota di pubblicazione
 
 Questa è la versione pensata per la pubblicazione su GitHub, in conformità con la dottrina BreachLab: insegna il metodo (identificazione di un interprete general-purpose con SUID anomalo, differenza tra `os.system()` e `open()` nativo rispetto all'EUID effettivo) senza riportare nomi di file/utenti specifici del lab né il valore della flag.
+
+---
 
 ## Crediti
 

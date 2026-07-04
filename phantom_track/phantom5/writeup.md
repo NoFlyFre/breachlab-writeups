@@ -1,5 +1,7 @@
 # Phantom Track - Phantom 5
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Phantom
@@ -39,6 +41,8 @@ Sfruttando l'appartenenza indebita al gruppo `shadow` è stato possibile leggere
 ## Nota di pubblicazione
 
 Questo writeup è la versione pubblica (GitHub) delle note personali sul livello Phantom 5 di BreachLab. In conformità alla dottrina BreachLab (Writeups · Creators), il documento insegna il metodo — analisi dei privilegi di gruppo Unix pericolosi, lettura autorizzata (dal punto di vista del sistema operativo, anche se non prevista) di `/etc/shadow`, e cracking offline con dizionario — ma non riporta hash, password in chiaro o la flag finale, che il solutore deve ottenere in autonomia ripetendo l'analisi sul proprio ambiente, nel rispetto della regola "no brute force" contro l'infrastruttura viva (il cracking qui è sempre offline, contro un hash già esfiltrato legittimamente).
+
+---
 
 ## Crediti
 

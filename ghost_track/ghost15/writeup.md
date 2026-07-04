@@ -1,5 +1,7 @@
 # Ghost Track - Ghost 15
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Ghost Track
@@ -59,6 +61,8 @@ Individuato il servizio nascosto sulla porta effimera, TLS puro, che dopo autent
 ## Nota di pubblicazione
 
 Questa è la versione pensata per la pubblicazione su GitHub secondo la dottrina BreachLab (Writeups · Creators): il metodo è spiegato per intero, ma password, numero di porta specifico e flag letterali sono state sostituite con placeholder per non fornire scorciatoie a chi non ha ancora risolto il livello.
+
+---
 
 ## Crediti
 

@@ -1,5 +1,7 @@
 # Phantom Track - Phantom 0
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Phantom Track
@@ -108,6 +110,8 @@ La flag del livello si trovava in un file dedicato sotto `/opt/`, individuata no
 ## Nota di pubblicazione
 
 Questa è la versione pensata per la pubblicazione su GitHub, in conformità con la dottrina BreachLab: insegna il metodo di ricognizione sistematica e la tecnica della ricerca temporale mirata (`find -newermt`) senza riportare percorsi assoluti specifici del lab, date di provisioning esatte o il valore letterale della flag.
+
+---
 
 ## Crediti
 

@@ -1,5 +1,7 @@
 # Ghost Track - Ghost 3
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Ghost Track
@@ -66,6 +68,8 @@ Le credenziali riservate al gruppo "Analyst Only" sono state recuperate con succ
 ## Nota di pubblicazione
 
 Questa è la versione pubblicabile su GitHub secondo la dottrina BreachLab: spiega per intero il metodo (enumerazione dell'appartenenza ai gruppi Unix e sfruttamento dei permessi di directory già concessi) ma omette il codice di accesso recuperato, per non fornire una scorciatoia a chi non ha ancora risolto il livello.
+
+---
 
 ## Crediti
 

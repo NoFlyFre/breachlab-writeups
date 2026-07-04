@@ -1,5 +1,7 @@
 # Phantom Track - Phantom 19
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Phantom
@@ -29,6 +31,8 @@ Non ci sono evidenze sufficienti nel materiale grezzo per ricostruire la soluzio
 ## Nota di pubblicazione
 
 Questo writeup è la versione pubblica (GitHub) delle note personali sul livello Phantom 19 di BreachLab. In conformità alla dottrina BreachLab (Writeups · Creators), questo documento non contiene alcuna soluzione — semplicemente perché le note grezze disponibili non ne contengono una. Non viene inventato alcun contenuto tecnico per riempire il vuoto.
+
+---
 
 ## Crediti
 

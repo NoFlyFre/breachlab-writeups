@@ -1,5 +1,7 @@
 # Phantom Track - Phantom 12
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Phantom
@@ -48,6 +50,8 @@ Con tutti e quattro i meccanismi di persistenza user-level installati e verifica
 ## Nota di pubblicazione
 
 Questo writeup è la versione pubblica (GitHub) delle note personali sul livello Phantom 12 di BreachLab. In conformità alla dottrina BreachLab (Writeups · Creators), il documento insegna il metodo — quattro tecniche distinte di persistenza user-level e come validarle incrementalmente — ma non riporta la flag/password finale né dettagli superflui identificativi dell'ambiente personale del solutore, che deve ripetere l'esercizio in autonomia sul proprio ambiente.
+
+---
 
 ## Crediti
 

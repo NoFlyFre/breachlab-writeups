@@ -1,5 +1,7 @@
 # Ghost Track - Ghost 18
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - **Track:** Ghost
@@ -60,6 +62,8 @@ Sfruttando il binario SUID di proprietà di `ghost19` è stata ottenuta la passw
 ## Nota di pubblicazione
 
 Questa è la versione destinata alla pubblicazione su GitHub, in linea con la dottrina BreachLab (Writeups · Creators): il metodo — enumerazione dei bit SUID, correlazione per proprietario, abuso del binario per leak di credenziali — è spiegato per intero; il valore letterale della password ottenuta è stato rimosso per non fornire uno spoiler diretto ad altri operatori.
+
+---
 
 ## Crediti
 

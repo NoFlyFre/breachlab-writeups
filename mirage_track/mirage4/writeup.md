@@ -1,5 +1,7 @@
 # Mirage Track - Mirage 4
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - **Track:** Mirage
@@ -68,6 +70,8 @@ Attraverso `robots.txt` → `sitemap.xml` → endpoint interno non autenticato �
 ## Nota di pubblicazione
 
 Questa è la versione destinata alla pubblicazione su GitHub, in linea con la dottrina BreachLab (Writeups · Creators): il metodo — discovery via `robots.txt`/`sitemap.xml`, individuazione di un endpoint amministrativo non collegato pubblicamente, ed esfiltrazione di un secret esposto lato client dietro un semplice toggle "Reveal" — è spiegato per intero; il valore letterale della chiave d'accesso è stato rimosso per non fornire uno spoiler diretto ad altri operatori.
+
+---
 
 ## Crediti
 

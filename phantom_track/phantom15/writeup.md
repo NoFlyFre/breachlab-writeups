@@ -1,5 +1,7 @@
 # Phantom Track - Phantom 15
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Phantom Track
@@ -148,6 +150,8 @@ Cleanup completo verificato dallo script del lab, con zero tracce residue. Il li
 ## Nota di pubblicazione
 
 Questa è la versione pensata per pubblicazione su GitHub, secondo la dottrina BreachLab: il metodo di pulizia forense (identificazione delle categorie di traccia, differenza tra svuotare e rimuovere un file, uso di `unset HISTFILE`) è spiegato per intero — comandi e percorsi restano in chiaro — ma entrambi i valori letterali (il marker letto da `/root/clean_flag` e la flag finale del verifier) sono stati rimossi.
+
+---
 
 ## Crediti
 

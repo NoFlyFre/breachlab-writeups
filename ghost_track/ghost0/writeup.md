@@ -1,5 +1,7 @@
 # Ghost Track - Ghost 0
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Ghost Track
@@ -62,6 +64,8 @@ La lettura del secondo file nella home directory restituisce la password per il 
 ## Nota di pubblicazione
 
 Questa è la versione pensata per la pubblicazione su GitHub secondo la dottrina BreachLab (Writeups · Creators): il metodo è spiegato per intero, ma password e flag letterali sono state sostituite con `<REDACTED>` per non fornire scorciatoie a chi non ha ancora risolto il livello.
+
+---
 
 ## Crediti
 

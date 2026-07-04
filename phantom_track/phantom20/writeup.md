@@ -1,5 +1,7 @@
 # Phantom Track - Phantom 20
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - **Track:** Phantom Track
@@ -29,6 +31,8 @@ Non ci sono evidenze sufficienti per ricostruire la soluzione di questo livello.
 ## Nota di pubblicazione
 
 Questo writeup è la versione pubblicabile su GitHub secondo la dottrina BreachLab (`RULES · OPS DOCTRINE`). Viene pubblicato onestamente come "incompleto" piuttosto che con contenuti inventati: BreachLab richiede di insegnare il metodo realmente usato, mai di simulare una soluzione non documentata.
+
+---
 
 ## Crediti
 

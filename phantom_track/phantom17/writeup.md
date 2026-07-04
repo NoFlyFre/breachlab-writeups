@@ -1,5 +1,7 @@
 # Phantom Track - Phantom 17
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Phantom Track
@@ -88,6 +90,8 @@ SAVE
 ## Risultato
 
 Individuata e confermata la superficie vulnerabile (Redis 6.0.16 senza autenticazione, esposto su tutte le interfacce). La tecnica di scrittura della chiave SSH via Redis è spiegata per intero sopra; nessun valore risolutivo (chiave specifica usata, utente finale, flag) viene fornito in questa versione pubblica.
+
+---
 
 ## Crediti
 

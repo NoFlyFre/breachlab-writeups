@@ -1,5 +1,7 @@
 # Ghost Track - Ghost 21
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Ghost Track
@@ -91,6 +93,8 @@ La deploy key recuperata dalla history del tag di release candidate è la passwo
 ## Nota di pubblicazione
 
 Questa è la versione pensata per la pubblicazione su GitHub secondo la dottrina BreachLab (Writeups · Creators): il metodo è spiegato per intero, ma la deploy key è stata sostituita con `<REDACTED>` per non fornire scorciatoie a chi non ha ancora risolto il livello.
+
+---
 
 ## Crediti
 

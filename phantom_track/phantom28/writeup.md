@@ -1,5 +1,7 @@
 # Phantom Track - Phantom 28
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Phantom Track
@@ -15,6 +17,8 @@ Di conseguenza non è possibile produrre in questa fase un writeup tecnico compl
 ## Nota di pubblicazione
 
 Non essendoci al momento contenuto tecnico da esporre, questa versione censored coincide di fatto con la versione clean: non c'è nulla da redigere perché non c'è alcun valore sensibile riportato. Quando il livello verrà documentato con appunti reali, questo file andrà riscritto seguendo la struttura standard (Obiettivo, Ricognizione, Tecnica, Sfruttamento, Risultato) con i valori letterali (flag/password/secret) sostituiti da `<REDACTED>`, secondo la dottrina BreachLab.
+
+---
 
 ## Crediti
 

@@ -1,5 +1,7 @@
 # Ghost Track - Ghost 6
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - **Track:** Ghost Track
@@ -64,6 +66,8 @@ Decodificando sistematicamente le quattro variabili Base64 in `.bashrc` e scarta
 ## Nota di pubblicazione
 
 Questo writeup è la versione pubblicabile su GitHub secondo la dottrina BreachLab (`RULES · OPS DOCTRINE`): insegna il metodo (individuazione e decodifica di segreti Base64 in variabili d'ambiente/file di configurazione della shell, e discriminazione dai distrattori) senza rivelare la password/flag letterale del livello.
+
+---
 
 ## Crediti
 

@@ -1,5 +1,7 @@
 # Phantom Track - Phantom 13
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Phantom Track
@@ -89,6 +91,8 @@ Installati con successo tre meccanismi di persistenza indipendenti (profile.d, c
 ## Nota di pubblicazione
 
 Questa è la versione pensata per la pubblicazione su GitHub secondo la dottrina BreachLab (Writeups · Creators): il metodo è spiegato per intero (i tre sottosistemi sfruttati e la logica di ciascun meccanismo di persistenza), ma il payload letterale copiato dalle note e la flag finale sono stati generalizzati/omessi per non fornire una copia diretta della soluzione.
+
+---
 
 ## Crediti
 

@@ -1,5 +1,7 @@
 # Phantom Track - Phantom 31
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Phantom Track
@@ -24,6 +26,8 @@ _Nessuna nota registrata per questo livello._
 ## Conclusione operativa
 
 Non ci sono evidenze sufficienti per ricostruire una soluzione completa.
+
+---
 
 ## Crediti
 

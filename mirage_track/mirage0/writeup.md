@@ -1,5 +1,7 @@
 # Mirage Track - Mirage 0
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Mirage Track
@@ -61,6 +63,8 @@ Sia la workspace access key sia la chiave HTTP Basic per l'ambiente successivo s
 ## Nota di pubblicazione
 
 Questa è la versione pensata per la pubblicazione su GitHub secondo la dottrina BreachLab (Writeups · Creators): il metodo è spiegato per intero, ma le due chiavi/access key sono state sostituite con `<REDACTED>` per non fornire scorciatoie a chi non ha ancora risolto il livello.
+
+---
 
 ## Crediti
 

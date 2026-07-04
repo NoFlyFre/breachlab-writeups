@@ -1,5 +1,7 @@
 # Phantom Track - Phantom 23
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Phantom Track
@@ -29,6 +31,8 @@ Non ci sono evidenze sufficienti nelle note per ricostruire la soluzione di ques
 ## Nota di pubblicazione
 
 Questa è la versione pensata per la pubblicazione su GitHub secondo la dottrina BreachLab (Writeups · Creators). Non essendoci contenuto tecnico da riportare, questo file segnala semplicemente l'assenza di materiale piuttosto che inventare una soluzione plausibile ma non verificata.
+
+---
 
 ## Crediti
 

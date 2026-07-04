@@ -1,5 +1,7 @@
 # Ghost Track - Ghost 16
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - **Track:** Ghost Track
@@ -38,6 +40,8 @@ Il diff isola con precisione la riga alterata, rivelando la credenziale piantata
 ## Nota di pubblicazione
 
 Questo writeup è la versione pubblicabile su GitHub secondo la dottrina BreachLab (`RULES · OPS DOCTRINE`): insegna il metodo (individuazione di configuration drift tramite diff testuale) senza rivelare la password/flag letterale del livello, in modo che chi legge debba comunque eseguire l'esercizio.
+
+---
 
 ## Crediti
 

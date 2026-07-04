@@ -1,5 +1,7 @@
 # Ghost Track - Ghost 19
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Ghost Track
@@ -47,6 +49,8 @@ Tecnica di raccolta e riassemblaggio automatizzato applicata con successo: il se
 ## Nota di pubblicazione
 
 Questa è la versione pubblicabile su GitHub secondo la dottrina BreachLab: spiega per intero il metodo (interrogazione per indice via netcat automatizzata con un ciclo shell) ma omette il nome esatto dei comandi del protocollo applicativo e la password ricostruita, per non fornire una scorciatoia a chi non ha ancora risolto il livello.
+
+---
 
 ## Crediti
 

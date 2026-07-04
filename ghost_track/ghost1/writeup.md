@@ -1,5 +1,7 @@
 # Ghost Track - Ghost 1
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Ghost
@@ -33,6 +35,8 @@ Proseguendo l'enumerazione oltre il file "esca" iniziale si ottiene il valore co
 ## Nota di pubblicazione
 
 Questo writeup è la versione pubblica (GitHub) delle note personali sul livello Ghost 1 di BreachLab. In conformità alla dottrina BreachLab (Writeups · Creators), il documento insegna il metodo di ricognizione/enumerazione usato per risolvere il livello, ma non riporta password, flag o hint letterali che permetterebbero di saltare il ragionamento. Chi vuole risolvere il livello deve comunque enumerare ed esplorare la directory in autonomia.
+
+---
 
 ## Crediti
 

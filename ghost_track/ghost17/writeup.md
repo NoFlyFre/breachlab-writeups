@@ -1,5 +1,7 @@
 # Ghost Track - Ghost 17
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Ghost Track
@@ -70,6 +72,8 @@ L'esecuzione di comandi SSH non interattivi (`ssh host "comando"`) contro un acc
 ## Nota di pubblicazione
 
 Questa è la versione pubblicabile su GitHub secondo la dottrina BreachLab: spiega per intero il metodo (esecuzione di comandi SSH one-off contro account senza shell interattiva), ma non riporta la password/credenziale risolutiva, in modo da preservare la sfida per gli altri operatori.
+
+---
 
 ## Crediti
 

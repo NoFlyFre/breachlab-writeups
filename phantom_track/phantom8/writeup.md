@@ -1,5 +1,7 @@
 # Phantom Track - Phantom 8
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Phantom Track
@@ -115,6 +117,8 @@ Recuperato leggendo la memoria di processo (heap) del demone tramite `/proc/<pid
 ## Nota di pubblicazione
 
 Questa versione è pensata per la pubblicazione su GitHub secondo la dottrina operativa di BreachLab: il metodo (opt-in `PR_SET_PTRACER`, attach GDB same-UID, lettura di `/proc/<pid>/maps` e `/proc/<pid>/mem`, estrazione con `dd` + `strings`) è descritto per intero, perché lo scopo di un writeup è insegnare la tecnica. Il valore letterale del segreto recuperato è invece sostituito da `<REDACTED_FLAG>`, così come i PID e gli offset di memoria specifici della sessione (che sarebbero comunque diversi a ogni run e non aggiungono valore didattico) sono stati generalizzati in placeholder (`<PID>`, `<offset_heap>`). Nessuna password, flag o hint letterale viene condivisa: chi legge deve rifare il ragionamento e l'estrazione sulla propria istanza del livello.
+
+---
 
 ## Crediti
 

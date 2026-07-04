@@ -1,5 +1,7 @@
 # Ghost Track - Ghost 9
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Ghost
@@ -33,6 +35,8 @@ Estraendo le stringhe dal core dump con `strings` si individua tra le variabili 
 ## Nota di pubblicazione
 
 Questo writeup è la versione pubblica (GitHub) delle note personali sul livello Ghost 9 di BreachLab. In conformità alla dottrina BreachLab (Writeups · Creators), il documento insegna il metodo — estrazione ed analisi di stringhe da un core dump con `strings` per individuare segreti in memoria — ma non riporta il valore letterale del token/password, che il solutore deve ottenere in autonomia ripetendo l'analisi sul proprio ambiente.
+
+---
 
 ## Crediti
 

@@ -1,5 +1,7 @@
 # Ghost Track - Ghost 22
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - **Track:** Ghost Track
@@ -95,6 +97,8 @@ I tre shard vengono recuperati con tre tecniche distinte — estrazione di strin
 ## Nota di pubblicazione
 
 Questo writeup è la versione pubblicabile su GitHub secondo la dottrina BreachLab (`RULES · OPS DOCTRINE`): insegna il metodo (estrazione di stringhe da binari, decodifica Base64, sfruttamento di helper SUID) senza rivelare i valori letterali degli shard o la flag finale, in modo che chi legge debba comunque eseguire l'esercizio.
+
+---
 
 ## Crediti
 

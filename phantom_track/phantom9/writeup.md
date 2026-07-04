@@ -1,5 +1,7 @@
 # Phantom Track - Phantom 9
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Phantom Track
@@ -121,6 +123,8 @@ $ whoami
 ## Risultato
 
 Ottenuta esecuzione di codice arbitrario con l'EUID del proprietario del binario SUID vulnerabile, tramite stack buffer overflow sfruttato con environment spraying + brute force su indirizzo di ritorno. Valore della flag omesso in questa versione pubblica.
+
+---
 
 ## Crediti
 

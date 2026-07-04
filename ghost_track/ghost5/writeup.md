@@ -1,5 +1,7 @@
 # Ghost Track - Ghost 5
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Ghost Track
@@ -99,6 +101,8 @@ La credenziale ottenuta interrogando il "secure channel" con il token annunciato
 ## Nota di pubblicazione
 
 Questa è la versione pensata per la pubblicazione su GitHub secondo la dottrina BreachLab (Writeups · Creators): il metodo è spiegato per intero, ma numeri di porta specifici, token e credenziale finale sono stati sostituiti con placeholder per non fornire scorciatoie a chi non ha ancora risolto il livello.
+
+---
 
 ## Crediti
 

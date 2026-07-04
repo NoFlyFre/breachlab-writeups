@@ -1,5 +1,7 @@
 # Phantom Track - Phantom 16
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Phantom Track
@@ -115,6 +117,8 @@ Usando `ssh -W host:port` per instradare manualmente una richiesta HTTP grezza a
 ## Nota di pubblicazione
 
 Questa è la versione pensata per pubblicazione su GitHub, secondo la dottrina BreachLab: il metodo (individuazione delle restrizioni di port-forwarding, uso di `ssh -W` per lo stdio-forwarding, costruzione manuale di una richiesta HTTP raw, scansione delle porte comuni) è spiegato per intero — comandi, percorsi e sintassi restano in chiaro — ma il valore letterale della flag, che appare due volte identica nelle note originali, è stato rimosso in entrambe le occorrenze.
+
+---
 
 ## Crediti
 

@@ -1,5 +1,7 @@
 # Phantom Track - Phantom 11
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Phantom Track
@@ -82,6 +84,8 @@ La cronologia git ha rivelato, nel diff del commit di "pulizia", il valore origi
 ## Nota di pubblicazione
 
 Questa è la versione pubblicabile su GitHub secondo la dottrina BreachLab: spiega per intero il metodo (ispezione della cronologia git con `git log`/`git show` per recuperare segreti da commit che li "rimuovono" senza riscrivere la storia) ma omette i valori reali dei segreti recuperati, per non fornire una scorciatoia a chi non ha ancora risolto il livello.
+
+---
 
 ## Crediti
 

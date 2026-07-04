@@ -1,5 +1,7 @@
 # Ghost Track - Ghost 20
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Ghost Track
@@ -66,6 +68,8 @@ Sfruttando la finestra temporale creata dal cron job root tra scrittura e cancel
 ## Nota di pubblicazione
 
 Questa è la versione pubblicabile su GitHub secondo la dottrina BreachLab: spiega per intero il metodo (identificazione di job cron custom, analisi dello script e sfruttamento della race condition TOCTOU su file temporanei), ma non riporta il secret/password risolutivo, in modo da preservare la sfida per gli altri operatori.
+
+---
 
 ## Crediti
 

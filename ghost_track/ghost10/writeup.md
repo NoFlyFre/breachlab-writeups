@@ -1,5 +1,7 @@
 # Ghost Track - Ghost 10
 
+[← Torna all'indice](../../README.md)
+
 ## Sommario
 
 - Track: Ghost Track
@@ -51,6 +53,8 @@ Il comando `sort | uniq -u` isola correttamente l'unica riga non duplicata nel d
 ## Nota di pubblicazione
 
 Questa è la versione pubblicabile su GitHub secondo la dottrina BreachLab: spiega per intero il metodo e il ragionamento (uso di `sort`/`uniq` per l'analisi di frequenza), ma non riporta la password/token risolutivo, in modo da preservare la sfida per gli altri operatori.
+
+---
 
 ## Crediti
 
