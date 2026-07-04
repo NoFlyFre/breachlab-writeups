@@ -5,7 +5,7 @@
 ## Sommario
 
 - Track: Phantom Track
-- Livello: Phantom 29
+- Livello: Phantom 29 ("Wire Tap")
 - Fonte appunti: `phantom_track/phantom29/notes.md`
 
 ## Obiettivo

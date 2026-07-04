@@ -5,7 +5,7 @@
 ## Sommario
 
 - Track: Phantom
-- Livello: Phantom 22
+- Livello: Phantom 22 ("Leaky Vessels")
 - Fonte appunti: `phantom_track/phantom22/notes.md`
 
 ## Obiettivo

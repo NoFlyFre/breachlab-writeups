@@ -5,7 +5,7 @@
 ## Sommario
 
 - Track: Phantom Track
-- Livello: Phantom 26
+- Livello: Phantom 26 ("Cloud Reach")
 - Fonte appunti: `phantom_track/phantom26/notes.md`
 
 ## Obiettivo

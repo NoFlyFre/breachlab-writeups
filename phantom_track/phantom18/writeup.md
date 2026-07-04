@@ -5,7 +5,7 @@
 ## Sommario
 
 - Track: Phantom Track
-- Livello: Phantom 18
+- Livello: Phantom 18 ("Credential Spray")
 - Fonte appunti: `phantom_track/phantom18/notes.md`
 
 ## Obiettivo

@@ -5,7 +5,7 @@
 ## Sommario
 
 - Track: Phantom Track
-- Livello: Phantom 13
+- Livello: Phantom 13 ("Deep Roots")
 - Fonte appunti: `phantom_track/phantom13/notes.md`
 
 ## Obiettivo

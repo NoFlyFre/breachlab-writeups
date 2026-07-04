@@ -5,7 +5,7 @@
 ## Sommario
 
 - Track: Ghost Track
-- Livello: Ghost 15
+- Livello: Ghost 15 ("Ephemeral Port")
 - Fonte appunti: `ghost_track/ghost15/notes.md`
 
 ## Obiettivo

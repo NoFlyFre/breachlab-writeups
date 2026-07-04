@@ -5,7 +5,7 @@
 ## Sommario
 
 - Track: Phantom
-- Livello: Phantom 19
+- Livello: Phantom 19 ("Chain Reaction")
 - Fonte appunti: `phantom_track/phantom19/notes.md`
 
 ## Obiettivo

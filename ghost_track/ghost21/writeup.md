@@ -5,7 +5,7 @@
 ## Sommario
 
 - Track: Ghost Track
-- Livello: Ghost 21
+- Livello: Ghost 21 ("Secrets in History")
 - Fonte appunti: `ghost_track/ghost21/notes.md`
 
 ## Obiettivo

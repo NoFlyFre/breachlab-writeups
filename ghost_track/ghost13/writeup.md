@@ -5,7 +5,7 @@
 ## Sommario
 
 - Track: Ghost
-- Livello: Ghost 13
+- Livello: Ghost 13 ("Credential Broker")
 - Fonte appunti: `ghost_track/ghost13/notes.md`
 
 ## Obiettivo

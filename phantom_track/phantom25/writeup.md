@@ -5,7 +5,7 @@
 ## Sommario
 
 - Track: Phantom Track
-- Livello: Phantom 25
+- Livello: Phantom 25 ("Cluster Takeover")
 - Fonte appunti: `phantom_track/phantom25/notes.md`
 
 ## Obiettivo

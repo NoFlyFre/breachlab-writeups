@@ -5,7 +5,7 @@
 ## Sommario
 
 - Track: Phantom
-- Livello: Phantom 24
+- Livello: Phantom 24 ("Pod Games")
 - Fonte appunti: `phantom_track/phantom24/notes.md`
 
 ## Obiettivo

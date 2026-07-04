@@ -5,7 +5,7 @@
 ## Sommario
 
 - **Track:** Phantom Track
-- **Livello:** Phantom 30
+- **Livello:** Phantom 30 ("Clean Exit")
 - **Fonte appunti:** `phantom_track/phantom30/notes.md`
 
 ## Obiettivo

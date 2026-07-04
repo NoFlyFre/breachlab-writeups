@@ -5,7 +5,7 @@
 ## Sommario
 
 - Track: Phantom Track
-- Livello: Phantom 27
+- Livello: Phantom 27 ("Toolsmith")
 - Fonte appunti: `phantom_track/phantom27/notes.md`
 
 ## Obiettivo

@@ -5,7 +5,7 @@
 ## Sommario
 
 - **Track:** Phantom Track
-- **Livello:** Phantom 20
+- **Livello:** Phantom 20 ("Am I Contained?")
 - **Fonte appunti:** `phantom_track/phantom20/notes.md`
 
 ## Obiettivo

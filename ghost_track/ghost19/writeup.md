@@ -5,7 +5,7 @@
 ## Sommario
 
 - Track: Ghost Track
-- Livello: Ghost 19 ("Piece by Piece")
+- Livello: Ghost 19 ("Your First Script")
 - Fonte appunti: `ghost_track/ghost19/notes.md`
 
 ## Obiettivo

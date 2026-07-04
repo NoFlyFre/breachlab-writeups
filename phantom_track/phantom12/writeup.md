@@ -5,7 +5,7 @@
 ## Sommario
 
 - Track: Phantom
-- Livello: Phantom 12
+- Livello: Phantom 12 ("Ghost Install")
 - Fonte appunti: `phantom_track/phantom12/notes.md`
 
 ## Obiettivo

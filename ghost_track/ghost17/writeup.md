@@ -5,7 +5,7 @@
 ## Sommario
 
 - Track: Ghost Track
-- Livello: Ghost 17 ("Commands Only")
+- Livello: Ghost 17 ("No Shell For You")
 - Fonte appunti: `ghost_track/ghost17/notes.md`
 
 ## Obiettivo

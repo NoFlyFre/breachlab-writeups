@@ -5,7 +5,7 @@
 ## Sommario
 
 - Track: Phantom Track
-- Livello: Phantom 23
+- Livello: Phantom 23 ("Docker API")
 - Fonte appunti: `phantom_track/phantom23/notes.md`
 
 ## Obiettivo

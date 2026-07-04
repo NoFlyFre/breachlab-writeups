@@ -5,7 +5,7 @@
 ## Sommario
 
 - Track: Phantom Track
-- Livello: Phantom 21
+- Livello: Phantom 21 ("The Breakout")
 - Fonte appunti: `phantom_track/phantom21/notes.md`
 
 ## Obiettivo

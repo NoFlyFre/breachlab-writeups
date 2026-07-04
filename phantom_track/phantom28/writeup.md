@@ -5,7 +5,7 @@
 ## Sommario
 
 - Track: Phantom Track
-- Livello: Phantom 28
+- Livello: Phantom 28 ("The Heist")
 - Fonte appunti: `phantom_track/phantom28/notes.md`
 
 ## Nota
