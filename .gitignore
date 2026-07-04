@@ -1,0 +1,26 @@
+# BreachLab writeups repo — file esclusi da GitHub
+#
+# Regola: solo i writeup "censored" (metodo spiegato, nessuno spoiler)
+# vanno pubblicati. Note grezze e writeup "uncensored" restano locali.
+
+# Note grezze: log di terminale/output completi, spesso con credenziali reali
+notes.md
+note.md
+notes1.md
+noted.md
+
+# Writeup completi ad uso privato (contengono flag/password reali)
+writeup.uncensored.md
+
+# Artefatti grezzi che possono contenere segreti live del livello
+id_ed25519
+id_ed25519.pub
+hash.txt
+*.pcap
+known_hosts
+known_hosts.old
+
+# Scratch/OS
+.DS_Store
+op_responses/
+*.tmp
